@@ -19,6 +19,7 @@ export type Database = {
           author_avatar: string | null
           author_name: string | null
           category: string | null
+          client_id: string | null
           content_ar: string
           content_en: string
           created_at: string
@@ -40,6 +41,7 @@ export type Database = {
           author_avatar?: string | null
           author_name?: string | null
           category?: string | null
+          client_id?: string | null
           content_ar: string
           content_en: string
           created_at?: string
@@ -61,6 +63,7 @@ export type Database = {
           author_avatar?: string | null
           author_name?: string | null
           category?: string | null
+          client_id?: string | null
           content_ar?: string
           content_en?: string
           created_at?: string
@@ -78,7 +81,15 @@ export type Database = {
           updated_at?: string
           views_count?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "articles_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       clients: {
         Row: {
@@ -122,6 +133,7 @@ export type Database = {
       consultations: {
         Row: {
           budget_range: string | null
+          client_id: string | null
           country_preference: string | null
           created_at: string
           email: string
@@ -138,6 +150,7 @@ export type Database = {
         }
         Insert: {
           budget_range?: string | null
+          client_id?: string | null
           country_preference?: string | null
           created_at?: string
           email: string
@@ -154,6 +167,7 @@ export type Database = {
         }
         Update: {
           budget_range?: string | null
+          client_id?: string | null
           country_preference?: string | null
           created_at?: string
           email?: string
@@ -168,10 +182,19 @@ export type Database = {
           study_level?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "consultations_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       contact_messages: {
         Row: {
+          client_id: string | null
           created_at: string
           email: string
           full_name: string
@@ -183,6 +206,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          client_id?: string | null
           created_at?: string
           email: string
           full_name: string
@@ -194,6 +218,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          client_id?: string | null
           created_at?: string
           email?: string
           full_name?: string
@@ -204,10 +229,19 @@ export type Database = {
           subject?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "contact_messages_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       countries: {
         Row: {
+          client_id: string | null
           climate: string | null
           created_at: string
           currency: string | null
@@ -231,6 +265,7 @@ export type Database = {
           visa_requirements_en: string | null
         }
         Insert: {
+          client_id?: string | null
           climate?: string | null
           created_at?: string
           currency?: string | null
@@ -254,6 +289,7 @@ export type Database = {
           visa_requirements_en?: string | null
         }
         Update: {
+          client_id?: string | null
           climate?: string | null
           created_at?: string
           currency?: string | null
@@ -276,34 +312,54 @@ export type Database = {
           visa_requirements_ar?: string | null
           visa_requirements_en?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "countries_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       managers: {
         Row: {
+          client_id: string | null
           created_at: string
           email: string
           id: string
           password: string
         }
         Insert: {
+          client_id?: string | null
           created_at?: string
           email: string
           id?: string
           password: string
         }
         Update: {
+          client_id?: string | null
           created_at?: string
           email?: string
           id?: string
           password?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "managers_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       programs: {
         Row: {
           application_deadline: string | null
           career_prospects_ar: string | null
           career_prospects_en: string | null
+          client_id: string | null
           country_id: string | null
           created_at: string
           degree_level: string
@@ -329,6 +385,7 @@ export type Database = {
           application_deadline?: string | null
           career_prospects_ar?: string | null
           career_prospects_en?: string | null
+          client_id?: string | null
           country_id?: string | null
           created_at?: string
           degree_level: string
@@ -354,6 +411,7 @@ export type Database = {
           application_deadline?: string | null
           career_prospects_ar?: string | null
           career_prospects_en?: string | null
+          client_id?: string | null
           country_id?: string | null
           created_at?: string
           degree_level?: string
@@ -377,6 +435,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "programs_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "programs_country_id_fkey"
             columns: ["country_id"]
             isOneToOne: false
@@ -392,11 +457,151 @@ export type Database = {
           },
         ]
       }
+      site_settings: {
+        Row: {
+          client_id: string
+          created_at: string | null
+          email: string | null
+          facebook_url: string | null
+          id: string
+          instagram_url: string | null
+          linkedin_url: string | null
+          logo_url: string | null
+          office_location: string | null
+          primary_color_1: string | null
+          primary_color_2: string | null
+          primary_color_3: string | null
+          show_articles_section: boolean | null
+          show_countries_section: boolean | null
+          show_programs_section: boolean | null
+          show_testimonials_section: boolean | null
+          show_universities_section: boolean | null
+          site_name_ar: string | null
+          site_name_en: string | null
+          twitter_url: string | null
+          updated_at: string | null
+          whatsapp_number: string | null
+        }
+        Insert: {
+          client_id: string
+          created_at?: string | null
+          email?: string | null
+          facebook_url?: string | null
+          id?: string
+          instagram_url?: string | null
+          linkedin_url?: string | null
+          logo_url?: string | null
+          office_location?: string | null
+          primary_color_1?: string | null
+          primary_color_2?: string | null
+          primary_color_3?: string | null
+          show_articles_section?: boolean | null
+          show_countries_section?: boolean | null
+          show_programs_section?: boolean | null
+          show_testimonials_section?: boolean | null
+          show_universities_section?: boolean | null
+          site_name_ar?: string | null
+          site_name_en?: string | null
+          twitter_url?: string | null
+          updated_at?: string | null
+          whatsapp_number?: string | null
+        }
+        Update: {
+          client_id?: string
+          created_at?: string | null
+          email?: string | null
+          facebook_url?: string | null
+          id?: string
+          instagram_url?: string | null
+          linkedin_url?: string | null
+          logo_url?: string | null
+          office_location?: string | null
+          primary_color_1?: string | null
+          primary_color_2?: string | null
+          primary_color_3?: string | null
+          show_articles_section?: boolean | null
+          show_countries_section?: boolean | null
+          show_programs_section?: boolean | null
+          show_testimonials_section?: boolean | null
+          show_universities_section?: boolean | null
+          site_name_ar?: string | null
+          site_name_en?: string | null
+          twitter_url?: string | null
+          updated_at?: string | null
+          whatsapp_number?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "site_settings_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: true
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      testimonials: {
+        Row: {
+          avatar_url: string | null
+          client_id: string
+          content_ar: string
+          content_en: string
+          created_at: string | null
+          id: string
+          is_featured: boolean | null
+          name_ar: string
+          name_en: string
+          rating: number | null
+          title_ar: string | null
+          title_en: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          client_id: string
+          content_ar: string
+          content_en: string
+          created_at?: string | null
+          id?: string
+          is_featured?: boolean | null
+          name_ar: string
+          name_en: string
+          rating?: number | null
+          title_ar?: string | null
+          title_en?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          client_id?: string
+          content_ar?: string
+          content_en?: string
+          created_at?: string | null
+          id?: string
+          is_featured?: boolean | null
+          name_ar?: string
+          name_en?: string
+          rating?: number | null
+          title_ar?: string | null
+          title_en?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "testimonials_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       universities: {
         Row: {
           acceptance_rate: number | null
           application_deadline: string | null
           city: string | null
+          client_id: string | null
           country_id: string | null
           created_at: string
           description_ar: string | null
@@ -422,6 +627,7 @@ export type Database = {
           acceptance_rate?: number | null
           application_deadline?: string | null
           city?: string | null
+          client_id?: string | null
           country_id?: string | null
           created_at?: string
           description_ar?: string | null
@@ -447,6 +653,7 @@ export type Database = {
           acceptance_rate?: number | null
           application_deadline?: string | null
           city?: string | null
+          client_id?: string | null
           country_id?: string | null
           created_at?: string
           description_ar?: string | null
@@ -469,6 +676,13 @@ export type Database = {
           world_ranking?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "universities_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "universities_country_id_fkey"
             columns: ["country_id"]
