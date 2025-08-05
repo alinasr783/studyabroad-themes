@@ -5,6 +5,12 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import Countries from "./pages/Countries";
+import Universities from "./pages/Universities";
+import Programs from "./pages/Programs";
+import Articles from "./pages/Articles";
+import About from "./pages/About";
+import Contact from "./pages/Contact";
+import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -19,15 +25,15 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/countries" element={<Countries />} />
           <Route path="/countries/:slug" element={<Countries />} />
-          <Route path="/universities" element={<Countries />} />
-          <Route path="/universities/:slug" element={<Countries />} />
-          <Route path="/programs" element={<Countries />} />
-          <Route path="/programs/:slug" element={<Countries />} />
-          <Route path="/articles" element={<Countries />} />
-          <Route path="/articles/:slug" element={<Countries />} />
-          <Route path="/about" element={<Countries />} />
-          <Route path="/contact" element={<Countries />} />
-          <Route path="/admin" element={<Countries />} />
+          <Route path="/universities" element={<Universities />} />
+          <Route path="/universities/:slug" element={<Universities />} />
+          <Route path="/programs" element={<Programs />} />
+          <Route path="/programs/:slug" element={<Programs />} />
+          <Route path="/articles" element={<Articles />} />
+          <Route path="/articles/:slug" element={<Articles />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/admin" element={<Admin />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
