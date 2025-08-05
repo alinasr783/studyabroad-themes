@@ -6,11 +6,11 @@ import { ArrowRight, Phone, Mail, MessageCircle } from "lucide-react";
 const CTASection = () => {
   return (
     <section className="py-20">
-      <div className="container">
+      <div className="container px-4">
         <Card className="border-0 bg-gradient-to-br from-primary via-primary/90 to-secondary overflow-hidden relative">
           <div className="absolute inset-0 bg-black/10" />
-          <CardContent className="p-12 relative">
-            <div className="grid lg:grid-cols-2 gap-12 items-center">
+          <CardContent className="p-6 md:p-12 relative">
+            <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
               {/* Content */}
               <div className="space-y-6 text-white">
                 <div className="space-y-4">
@@ -24,7 +24,7 @@ const CTASection = () => {
                 </div>
 
                 {/* Contact Options */}
-                <div className="grid md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   <div className="flex items-center space-x-3 rtl:space-x-reverse">
                     <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
                       <Phone className="h-5 w-5" />
@@ -77,7 +77,7 @@ const CTASection = () => {
                   </div>
 
                   <form className="space-y-4">
-                    <div className="grid md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <Input 
                         placeholder="الاسم الأول" 
                         className="text-right"
@@ -100,7 +100,7 @@ const CTASection = () => {
                       className="text-right"
                     />
                     
-                    <div className="grid md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 text-right">
                         <option value="">اختر الدولة المفضلة</option>
                         <option value="usa">الولايات المتحدة</option>

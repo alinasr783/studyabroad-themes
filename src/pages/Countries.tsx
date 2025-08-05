@@ -23,28 +23,58 @@ interface Country {
 const Countries = () => {
   const { slug } = useParams();
   const [countries, setCountries] = useState<Country[]>([]);
+  const [selectedCountry, setSelectedCountry] = useState<Country | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchCountries = async () => {
       setLoading(true);
-      const { data } = await supabase
-        .from('countries')
-        .select('*')
-        .order('name_ar');
       
-      setCountries(data || []);
+      if (slug) {
+        // Fetch specific country
+        const { data } = await supabase
+          .from('countries')
+          .select('*')
+          .eq('slug', slug)
+          .single();
+        
+        setSelectedCountry(data);
+      } else {
+        // Fetch all countries
+        const { data } = await supabase
+          .from('countries')
+          .select('*')
+          .order('name_ar');
+        
+        setCountries(data || []);
+      }
+      
       setLoading(false);
     };
 
     fetchCountries();
-  }, []);
+  }, [slug]);
 
   if (loading) {
     return (
       <Layout>
         <div className="min-h-screen flex items-center justify-center">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+        </div>
+      </Layout>
+    );
+  }
+
+  // If viewing a specific country, show its details
+  if (selectedCountry) {
+    return (
+      <Layout>
+        <div className="container mx-auto px-4 py-8">
+          <div className="text-center mb-8">
+            <h1 className="text-4xl font-bold mb-4">{selectedCountry.name_ar}</h1>
+            <p className="text-xl text-muted-foreground">{selectedCountry.description_ar}</p>
+          </div>
+          {/* Add more detailed country information here */}
         </div>
       </Layout>
     );

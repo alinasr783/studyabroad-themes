@@ -61,7 +61,9 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
         <div className="flex items-center justify-between px-6 py-4">
           <div>
             <h1 className="text-xl font-bold">لوحة التحكم</h1>
-            <p className="text-sm text-muted-foreground">{session.client.name}</p>
+            <p className="text-sm text-muted-foreground">
+              {session.client ? session.client.name : "مدير النظام"}
+            </p>
           </div>
           <Button onClick={handleLogout} variant="outline" size="sm">
             <LogOut className="w-4 h-4 ml-2" />
