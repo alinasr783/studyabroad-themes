@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Phone, Star, Users, Globe, Award, CheckCircle, ArrowDown } from "lucide-react";
 import { useState, useEffect } from "react";
-import heroImage from "@/assets/hero-image.jpg";
+import heroImage from "@/assets/study-background.jpg";
 import { supabase } from "@/integrations/supabase/client";
 
 interface SiteSettings {
@@ -61,45 +61,18 @@ const HeroSection = () => {
             
             {/* Text Content */}
             <div className="text-white space-y-8 animate-fade-in">
-              {/* Badge */}
-              <div className="inline-flex items-center px-6 py-3 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white text-sm font-medium shadow-lg">
-                <Star className="w-5 h-5 ml-2 text-yellow-400 fill-current" />
-                الخيار الأول للدراسة بالخارج في المنطقة العربية
-              </div>
-
               {/* Main Heading */}
               <div className="space-y-6">
                 <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight">
-                  حقق حلمك وانضم إلى الكلية التي
+                  حقق حلمك في
                   <span className="block mt-2 bg-gradient-to-r from-yellow-400 via-orange-400 to-red-400 bg-clip-text text-transparent">
-                    لطالما رغبت بها
-                  </span>
-                  <span className="block mt-2 text-3xl md:text-4xl lg:text-5xl">
-                    من خلال خدمتنا المتميزة
+                    الدراسة بالخارج
                   </span>
                 </h1>
                 
-                <p className="text-xl md:text-2xl text-white/95 leading-relaxed font-medium max-w-2xl">
-                  🎯 نحن هنا لنساعدك في كل خطوة على طريق تحقيق هدفك الأكاديمي
-                  <span className="block mt-3 text-lg text-white/85">
-                    مع أفضل الخبراء والاستشاريين المتخصصين في التعليم الدولي
-                  </span>
+                <p className="text-lg md:text-xl text-white/90 leading-relaxed max-w-xl">
+                  نساعدك في الوصول لأفضل الجامعات العالمية مع خدمة استشارية متكاملة
                 </p>
-              </div>
-
-              {/* Features List */}
-              <div className="grid md:grid-cols-2 gap-4 py-4">
-                {[
-                  "🎓 أفضل الجامعات العالمية",
-                  "⚡ استجابة خلال 24 ساعة", 
-                  "🔒 آمن ومضمون 100%",
-                  "🌟 خدمة عملاء متميزة"
-                ].map((feature, index) => (
-                  <div key={index} className="flex items-center gap-3">
-                    <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0" />
-                    <span className="text-white/90">{feature}</span>
-                  </div>
-                ))}
               </div>
 
               {/* CTA Buttons */}
@@ -122,19 +95,10 @@ const HeroSection = () => {
               </div>
 
               {/* Trust Indicators */}
-              <div className="flex flex-wrap items-center gap-6 pt-6 border-t border-white/20">
-                <div className="flex items-center gap-2">
-                  <div className="flex">
-                    {[...Array(5)].map((_, i) => (
-                      <Star key={i} className="w-4 h-4 text-yellow-400 fill-current" />
-                    ))}
-                  </div>
-                  <span className="text-white/90 font-medium">4.9/5 تقييم العملاء</span>
-                </div>
+              <div className="flex flex-wrap items-center gap-4 pt-6 border-t border-white/20">
+                <div className="text-white/90">⭐ 5000+ طالب</div>
                 <div className="text-white/70">|</div>
-                <div className="text-white/90">⚡ أكثر من 5000 طالب سعيد</div>
-                <div className="text-white/70">|</div>
-                <div className="text-white/90">🏆 15 عام من الخبرة</div>
+                <div className="text-white/90">🏆 15 عام خبرة</div>
               </div>
             </div>
 
