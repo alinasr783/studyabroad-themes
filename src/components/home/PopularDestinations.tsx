@@ -1,151 +1,81 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { MapPin, Users, GraduationCap, ArrowLeft } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const PopularDestinations = () => {
   const destinations = [
     {
-      id: "usa",
-      name: "الولايات المتحدة",
-      nameEn: "United States",
-      flag: "🇺🇸",
-      universities: 150,
-      students: "5000+",
-      popular: true,
-      description: "موطن أفضل الجامعات في العالم مثل هارفارد وMIT",
-      features: ["تنوع أكاديمي", "فرص عمل ممتازة", "بحث علمي متقدم"],
+      id: "kyrgyzstan",
+      name: "دولة قيرغيزستان",
+      flag: "🇰🇬",
+      description: "التعليم الجامعي في قيرغيزستان يوفر فرصًا مميزة للطلاب الأجانب، مع برامج دراسية معتمدة عالميًا وتكاليف معيشة ودراسة منخفضة. تقدم الجامعات تخصصات متنوعة باللغة الإنجليزية أو الروسية، خاصة في مجالات الطب والهندسة، في بيئة متعددة الثقافات وداعمة للطلاب الدوليين.",
+      image: "https://d2pi0n2fm836iz.cloudfront.net/617793/0116202519080467895914092f2.png",
+      trending: true,
     },
     {
-      id: "canada",
-      name: "كندا",
-      nameEn: "Canada",
-      flag: "🇨🇦",
-      universities: 95,
-      students: "3500+",
-      popular: true,
-      description: "تعليم عالي الجودة ومجتمع متعدد الثقافات",
-      features: ["رسوم معقولة", "إمكانية الهجرة", "بيئة آمنة"],
+      id: "russia",
+      name: "دولة روسيا", 
+      flag: "🇷🇺",
+      description: "التعليم الجامعي في روسيا يُعد خيارًا شائعًا للطلاب الأجانب، بفضل جامعاتها المعترف بها عالميًا وبرامجها المتنوعة باللغة الروسية والإنجليزية. تتميز روسيا بجودة تعليم عالية، خاصة في مجالات الهندسة، الطب، وتكنولوجيا المعلومات، إلى جانب تكاليف دراسية ومعيشية معقولة مقارنة بالدول الأخرى",
+      image: "https://d2pi0n2fm836iz.cloudfront.net/617793/011620251908296789592d77d68.png",
     },
     {
-      id: "uk",
-      name: "المملكة المتحدة",
-      nameEn: "United Kingdom",
-      flag: "🇬🇧",
-      universities: 120,
-      students: "4200+",
-      popular: true,
-      description: "تاريخ عريق في التعليم مع جامعات أكسفورد وكامبريدج",
-      features: ["تاريخ أكاديمي", "مدة دراسة قصيرة", "شهادات معترفة"],
-    },
-    {
-      id: "australia",
-      name: "أستراليا",
-      nameEn: "Australia",
-      flag: "🇦🇺",
-      universities: 85,
-      students: "2800+",
-      popular: false,
-      description: "تعليم متميز في بيئة طبيعية خلابة",
-      features: ["جودة حياة عالية", "مناخ معتدل", "فرص عمل"],
-    },
-    {
-      id: "germany",
-      name: "ألمانيا",
-      nameEn: "Germany",
-      flag: "🇩🇪",
-      universities: 110,
-      students: "3200+",
-      popular: false,
-      description: "تعليم مجاني أو منخفض التكلفة مع تركيز على التكنولوجيا",
-      features: ["رسوم منخفضة", "قوة اقتصادية", "تقنية متقدمة"],
-    },
-    {
-      id: "france",
-      name: "فرنسا",
-      nameEn: "France",
-      flag: "🇫🇷",
-      universities: 75,
-      students: "2500+",
-      popular: false,
-      description: "مركز للثقافة والفنون مع جامعات عريقة",
-      features: ["ثقافة غنية", "تعليم متميز", "موقع استراتيجي"],
+      id: "eu",
+      name: "دول الاتحاد الاوروبي",
+      flag: "🇪🇺", 
+      description: "التعليم الجامعي في دول الاتحاد الأوروبي يتميز بجودة عالية وبرامج دراسية متنوعة تُقدم بلغات متعددة، بما في ذلك الإنجليزية. ومع ذلك، فإن تكاليف الدراسة والمعيشة تكون مرتفعة في العديد من الدول الأوروبية، مما يجعلها وجهة تتطلب تخطيطًا ماليًا دقيقًا للطلاب الدوليين",
+      image: "https://d2pi0n2fm836iz.cloudfront.net/617793/0116202519074667895902a57e8.png",
     },
   ];
 
   return (
-    <section className="py-20">
+    <section className="py-16 bg-gray-50">
       <div className="container">
-        <div className="text-center space-y-4 mb-16">
-          <h2 className="text-3xl lg:text-4xl font-bold">
-            <span className="text-primary">الوجهات</span> الأكثر شعبية
+        <div className="text-center mb-12">
+          <h2 className="text-3xl lg:text-4xl font-bold font-cairo mb-4">
+            أشهر الوجهات الدراسية
           </h2>
-          <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-            اكتشف أفضل الدول للدراسة في الخارج واعثر على الوجهة المثالية التي تناسب أهدافك الأكاديمية والمهنية
-          </p>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {destinations.map((destination) => (
+        <div className="grid md:grid-cols-1 lg:grid-cols-3 gap-8">
+          {destinations.map((destination, index) => (
             <Card 
               key={destination.id}
-              className="group hover:shadow-xl transition-all duration-300 overflow-hidden border-0 bg-gradient-to-br from-background to-muted/30"
+              className="group hover:shadow-xl transition-all duration-300 overflow-hidden"
             >
               <CardContent className="p-0">
-                {/* Header */}
-                <div className="p-6 pb-4">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center space-x-3 rtl:space-x-reverse">
-                      <span className="text-3xl">{destination.flag}</span>
-                      <div>
-                        <h3 className="text-xl font-semibold">{destination.name}</h3>
-                        <p className="text-sm text-muted-foreground">{destination.nameEn}</p>
-                      </div>
+                {/* Image */}
+                <div className="relative h-48 overflow-hidden">
+                  <img 
+                    src={destination.image} 
+                    alt={destination.name}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                  {destination.trending && (
+                    <div className="absolute top-4 right-4 bg-orange-500 text-white px-3 py-1 rounded-full text-sm font-semibold">
+                      رائج
                     </div>
-                    {destination.popular && (
-                      <Badge variant="secondary" className="bg-primary/10 text-primary">
-                        الأكثر شعبية
-                      </Badge>
-                    )}
+                  )}
+                </div>
+
+                {/* Content */}
+                <div className="p-6">
+                  <div className="flex items-center space-x-3 rtl:space-x-reverse mb-4">
+                    <span className="text-2xl">{destination.flag}</span>
+                    <h3 className="text-xl font-bold font-cairo">{destination.name}</h3>
                   </div>
                   
-                  <p className="text-muted-foreground text-sm leading-relaxed mb-4">
+                  <p className="text-muted-foreground leading-relaxed mb-6 text-sm">
                     {destination.description}
                   </p>
 
-                  {/* Stats */}
-                  <div className="grid grid-cols-2 gap-4 mb-4">
-                    <div className="flex items-center space-x-2 rtl:space-x-reverse text-sm">
-                      <GraduationCap className="h-4 w-4 text-primary" />
-                      <span className="text-muted-foreground">{destination.universities} جامعة</span>
-                    </div>
-                    <div className="flex items-center space-x-2 rtl:space-x-reverse text-sm">
-                      <Users className="h-4 w-4 text-secondary" />
-                      <span className="text-muted-foreground">{destination.students} طالب</span>
-                    </div>
-                  </div>
-
-                  {/* Features */}
-                  <div className="space-y-2 mb-6">
-                    {destination.features.map((feature, index) => (
-                      <div key={index} className="flex items-center space-x-2 rtl:space-x-reverse text-sm">
-                        <div className="w-1.5 h-1.5 bg-primary rounded-full" />
-                        <span className="text-muted-foreground">{feature}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* CTA */}
-                <div className="px-6 pb-6">
                   <Button 
                     asChild
-                    className="w-full group-hover:bg-primary group-hover:text-white transition-colors"
-                    variant="outline"
+                    className="w-full bg-orange-500 hover:bg-orange-600 text-white"
                   >
                     <Link to={`/countries/${destination.id}`}>
-                      اكتشف المزيد
+                      اعرف اكثر
                       <ArrowLeft className="mr-2 h-4 w-4" />
                     </Link>
                   </Button>
@@ -153,15 +83,6 @@ const PopularDestinations = () => {
               </CardContent>
             </Card>
           ))}
-        </div>
-
-        <div className="text-center mt-12">
-          <Button asChild size="lg" variant="outline">
-            <Link to="/countries">
-              عرض جميع الدول
-              <MapPin className="mr-2 h-5 w-5" />
-            </Link>
-          </Button>
         </div>
       </div>
     </section>

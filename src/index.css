@@ -17,13 +17,13 @@ All colors MUST be HSL.
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
-    /* Dynamic Brand Colors - يتم تحديثها ديناميكياً */
-    --primary: 220 90% 56%;
+    /* Dynamic Brand Colors - تم تحديثها لتطابق الموقع المرجعي */
+    --primary: 41 98% 55%;
     --primary-foreground: 0 0% 100%;
-    --primary-light: 220 90% 70%;
-    --primary-glow: 220 90% 85%;
+    --primary-light: 41 98% 70%;
+    --primary-glow: 41 98% 85%;
 
-    --secondary: 38 92% 50%;
+    --secondary: 12 88% 59%;
     --secondary-foreground: 0 0% 100%;
 
     --accent: 220 90% 56%;
@@ -37,11 +37,11 @@ All colors MUST be HSL.
 
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 220 90% 56%;
+    --ring: 41 98% 55%;
 
-    /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-light)));
-    --gradient-hero: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--secondary)) 100%);
+    /* Gradients مطابقة للموقع المرجعي */
+    --gradient-primary: linear-gradient(135deg, hsl(41, 98%, 55%) 0%, hsl(220, 90%, 56%) 100%);
+    --gradient-hero: linear-gradient(135deg, hsl(220, 90%, 56%) 0%, hsl(41, 98%, 55%) 100%);
     --gradient-card: linear-gradient(180deg, hsl(var(--background)) 0%, hsl(var(--muted)) 100%);
 
     /* Shadows */
