@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Phone, Star, Users, Globe, Award } from "lucide-react";
+import { ArrowRight, Phone, Star, Users, Globe, Award, CheckCircle, ArrowDown } from "lucide-react";
 import { useState, useEffect } from "react";
-import globeStudents from "@/assets/globe-students.jpg";
+import heroImage from "@/assets/hero-image.jpg";
 import { supabase } from "@/integrations/supabase/client";
 
 interface SiteSettings {
@@ -36,154 +36,146 @@ const HeroSection = () => {
 
   return (
     <section className="relative min-h-screen flex items-center overflow-hidden">
-      {/* Dynamic Enhanced Background */}
-      <div 
-        className="absolute inset-0"
-        style={{
-          background: siteSettings 
-            ? `linear-gradient(135deg, ${siteSettings.primary_color_1} 0%, ${siteSettings.primary_color_2} 50%, ${siteSettings.primary_color_3} 100%)`
-            : 'linear-gradient(135deg, #3b82f6 0%, #1e40af 50%, #1e3a8a 100%)'
-        }}
-      />
-      
-      {/* Animated background patterns */}
-      <div className="absolute inset-0 opacity-20">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_50%,rgba(255,255,255,0.1)_0%,transparent_50%)] animate-pulse" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(255,255,255,0.1)_0%,transparent_50%)] animate-pulse" style={{ animationDelay: '2s' }} />
-        <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_40%,rgba(255,255,255,0.05)_50%,transparent_60%)] bg-[size:100px_100px]" />
+      {/* Background Image with Overlay */}
+      <div className="absolute inset-0">
+        <img 
+          src={heroImage} 
+          alt="Study abroad background"
+          className="w-full h-full object-cover"
+        />
+        {/* Dark overlay with dynamic gradient */}
+        <div 
+          className="absolute inset-0"
+          style={{
+            background: siteSettings 
+              ? `linear-gradient(135deg, ${siteSettings.primary_color_1}CC 0%, ${siteSettings.primary_color_2}DD 50%, ${siteSettings.primary_color_3}CC 100%)`
+              : 'linear-gradient(135deg, #1e40afCC 0%, #3b82f6DD 50%, #1e3a8aCC 100%)'
+          }}
+        />
       </div>
 
-      <div className="container relative z-10 py-20">
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
-          {/* Enhanced Content */}
-          <div className="space-y-8 text-white order-2 lg:order-1 animate-fade-in">
-            {/* Badge */}
-            <div className="inline-flex items-center px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 text-white/90 text-sm font-medium">
-              <Star className="w-4 h-4 ml-2 text-yellow-300" />
-              الخيار الأول للدراسة بالخارج
-            </div>
-
-            <div className="space-y-6">
-              <h1 className="text-4xl lg:text-6xl font-bold leading-tight font-cairo">
-                حقق حلمك وانضم إلى الكلية التي{" "}
-                <span className="bg-gradient-to-r from-yellow-300 via-orange-400 to-red-400 bg-clip-text text-transparent animate-pulse">
-                  لطالما رغبت بها
-                </span>{" "}
-                من خلال خدمتنا المتميزة
-              </h1>
-              
-              <p className="text-xl lg:text-2xl text-white/95 leading-relaxed font-medium">
-                🎯 نحن هنا لنساعدك في كل خطوة على طريق تحقيق هدفك الأكاديمي
-                <span className="block mt-2 text-lg text-white/80">
-                  مع أفضل الخبراء والاستشاريين المتخصصين في التعليم الدولي
-                </span>
-              </p>
-            </div>
-
-            {/* Enhanced Stats */}
-            <div className="grid grid-cols-3 gap-6 py-6 border-y border-white/20">
-              <div className="text-center">
-                <div className="flex items-center justify-center w-12 h-12 bg-white/10 rounded-full mx-auto mb-2">
-                  <Globe className="w-6 h-6 text-yellow-300" />
-                </div>
-                <div className="text-2xl font-bold">50+</div>
-                <div className="text-white/80 text-sm">دولة حول العالم</div>
+      {/* Content */}
+      <div className="relative z-10 w-full">
+        <div className="container mx-auto px-4 py-20">
+          <div className="grid lg:grid-cols-2 gap-12 items-center min-h-[80vh]">
+            
+            {/* Text Content */}
+            <div className="text-white space-y-8 animate-fade-in">
+              {/* Badge */}
+              <div className="inline-flex items-center px-6 py-3 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white text-sm font-medium shadow-lg">
+                <Star className="w-5 h-5 ml-2 text-yellow-400 fill-current" />
+                الخيار الأول للدراسة بالخارج في المنطقة العربية
               </div>
-              <div className="text-center">
-                <div className="flex items-center justify-center w-12 h-12 bg-white/10 rounded-full mx-auto mb-2">
-                  <Award className="w-6 h-6 text-yellow-300" />
-                </div>
-                <div className="text-2xl font-bold">500+</div>
-                <div className="text-white/80 text-sm">جامعة مرموقة</div>
-              </div>
-              <div className="text-center">
-                <div className="flex items-center justify-center w-12 h-12 bg-white/10 rounded-full mx-auto mb-2">
-                  <Users className="w-6 h-6 text-yellow-300" />
-                </div>
-                <div className="text-2xl font-bold">5000+</div>
-                <div className="text-white/80 text-sm">طالب سعيد</div>
-              </div>
-            </div>
 
-            {/* Enhanced CTA Buttons */}
-            <div className="flex flex-col sm:flex-row gap-4">
-              <Button 
-                size="lg" 
-                className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white border-2 border-white/20 hover:border-white/40 transition-all duration-300 transform hover:scale-105 shadow-2xl text-lg px-8 py-6 font-semibold"
-              >
-                🚀 اعرف أكثر
-                <ArrowRight className="mr-2 h-5 w-5" />
-              </Button>
-              <Button 
-                variant="outline" 
-                size="lg"
-                className="border-2 border-white text-white hover:bg-white hover:text-primary transition-all duration-300 transform hover:scale-105 backdrop-blur-sm text-lg px-8 py-6 font-semibold"
-              >
-                <Phone className="ml-2 h-5 w-5" />
-                📞 اتصل بنا الآن
-              </Button>
-            </div>
-
-            {/* Trust indicators */}
-            <div className="flex flex-wrap items-center gap-4 text-white/70 text-sm">
-              <div className="flex items-center gap-1">
-                <Star className="w-4 h-4 text-yellow-300 fill-current" />
-                <span>4.9/5 تقييم العملاء</span>
-              </div>
-              <div className="w-1 h-4 bg-white/30 rounded-full" />
-              <div>⚡ استجابة خلال 24 ساعة</div>
-              <div className="w-1 h-4 bg-white/30 rounded-full" />
-              <div>🔒 آمن ومضمون 100%</div>
-            </div>
-          </div>
-
-          {/* Enhanced Hero Image */}
-          <div className="relative order-1 lg:order-2 animate-fade-in" style={{ animationDelay: '0.3s' }}>
-            <div className="relative flex items-center justify-center">
-              {/* Floating background elements */}
-              <div className="absolute -top-10 -right-10 w-32 h-32 bg-yellow-400/20 rounded-full blur-2xl animate-pulse" />
-              <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-orange-400/20 rounded-full blur-2xl animate-pulse" style={{ animationDelay: '1s' }} />
-              <div className="absolute top-1/2 -right-5 w-20 h-20 bg-red-400/15 rounded-full blur-xl animate-pulse" style={{ animationDelay: '2s' }} />
-              
-              {/* Main globe container */}
-              <div className="relative w-[400px] h-[400px] lg:w-[500px] lg:h-[500px] group">
-                {/* Outer glow ring */}
-                <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-yellow-400/30 via-orange-400/20 to-red-400/30 animate-spin" style={{ animationDuration: '20s' }} />
+              {/* Main Heading */}
+              <div className="space-y-6">
+                <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight">
+                  حقق حلمك وانضم إلى الكلية التي
+                  <span className="block mt-2 bg-gradient-to-r from-yellow-400 via-orange-400 to-red-400 bg-clip-text text-transparent">
+                    لطالما رغبت بها
+                  </span>
+                  <span className="block mt-2 text-3xl md:text-4xl lg:text-5xl">
+                    من خلال خدمتنا المتميزة
+                  </span>
+                </h1>
                 
-                {/* Inner image container */}
-                <div className="absolute inset-2 rounded-full overflow-hidden transform group-hover:scale-105 transition-transform duration-500">
-                  <img 
-                    src={globeStudents} 
-                    alt="Globe with international students"
-                    className="w-full h-full object-cover"
-                  />
-                  
-                  {/* Dynamic overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-tr from-yellow-400/20 via-transparent to-blue-300/20" />
-                  
-                  {/* Floating badges */}
-                  <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 text-xs font-bold text-primary transform rotate-12">
-                    ✅ موثق ومعتمد
+                <p className="text-xl md:text-2xl text-white/95 leading-relaxed font-medium max-w-2xl">
+                  🎯 نحن هنا لنساعدك في كل خطوة على طريق تحقيق هدفك الأكاديمي
+                  <span className="block mt-3 text-lg text-white/85">
+                    مع أفضل الخبراء والاستشاريين المتخصصين في التعليم الدولي
+                  </span>
+                </p>
+              </div>
+
+              {/* Features List */}
+              <div className="grid md:grid-cols-2 gap-4 py-4">
+                {[
+                  "🎓 أفضل الجامعات العالمية",
+                  "⚡ استجابة خلال 24 ساعة", 
+                  "🔒 آمن ومضمون 100%",
+                  "🌟 خدمة عملاء متميزة"
+                ].map((feature, index) => (
+                  <div key={index} className="flex items-center gap-3">
+                    <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0" />
+                    <span className="text-white/90">{feature}</span>
                   </div>
-                  <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 text-xs font-bold text-primary transform -rotate-12">
-                    🌟 خدمة متميزة
+                ))}
+              </div>
+
+              {/* CTA Buttons */}
+              <div className="flex flex-col sm:flex-row gap-4 pt-4">
+                <Button 
+                  size="lg" 
+                  className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white shadow-2xl transform hover:scale-105 transition-all duration-300 text-lg px-8 py-6 font-bold border-0"
+                >
+                  🚀 ابدأ رحلتك الآن
+                  <ArrowRight className="mr-2 h-6 w-6" />
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="lg"
+                  className="border-2 border-white text-white hover:bg-white hover:text-primary backdrop-blur-sm transform hover:scale-105 transition-all duration-300 text-lg px-8 py-6 font-bold bg-white/10"
+                >
+                  <Phone className="ml-2 h-6 w-6" />
+                  📞 تواصل معنا مجاناً
+                </Button>
+              </div>
+
+              {/* Trust Indicators */}
+              <div className="flex flex-wrap items-center gap-6 pt-6 border-t border-white/20">
+                <div className="flex items-center gap-2">
+                  <div className="flex">
+                    {[...Array(5)].map((_, i) => (
+                      <Star key={i} className="w-4 h-4 text-yellow-400 fill-current" />
+                    ))}
                   </div>
-                  <div className="absolute top-1/2 right-0 bg-orange-500/90 text-white rounded-l-lg px-3 py-2 text-xs font-bold">
-                    🏆 الأفضل في المنطقة
-                  </div>
+                  <span className="text-white/90 font-medium">4.9/5 تقييم العملاء</span>
                 </div>
+                <div className="text-white/70">|</div>
+                <div className="text-white/90">⚡ أكثر من 5000 طالب سعيد</div>
+                <div className="text-white/70">|</div>
+                <div className="text-white/90">🏆 15 عام من الخبرة</div>
+              </div>
+            </div>
+
+            {/* Stats Section */}
+            <div className="animate-fade-in" style={{ animationDelay: '0.3s' }}>
+              <div className="grid grid-cols-2 gap-6">
+                {[
+                  { icon: Globe, number: "50+", label: "دولة حول العالم", color: "from-blue-400 to-cyan-400" },
+                  { icon: Award, number: "500+", label: "جامعة مرموقة", color: "from-purple-400 to-pink-400" },
+                  { icon: Users, number: "5000+", label: "طالب سعيد", color: "from-green-400 to-emerald-400" },
+                  { icon: CheckCircle, number: "15+", label: "عام من الخبرة", color: "from-orange-400 to-red-400" }
+                ].map((stat, index) => {
+                  const Icon = stat.icon;
+                  return (
+                    <div 
+                      key={index} 
+                      className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20 text-center transform hover:scale-105 transition-all duration-300 shadow-xl"
+                    >
+                      <div className={`w-16 h-16 bg-gradient-to-br ${stat.color} rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg`}>
+                        <Icon className="w-8 h-8 text-white" />
+                      </div>
+                      <div className="text-3xl font-bold text-white mb-2">{stat.number}</div>
+                      <div className="text-white/90 font-medium text-sm">{stat.label}</div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Enhanced scroll indicator */}
+      {/* Scroll Indicator */}
       <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce cursor-pointer group">
-        <div className="w-6 h-10 border-2 border-white/60 rounded-full flex justify-center group-hover:border-white transition-colors">
-          <div className="w-1 h-3 bg-white/60 rounded-full mt-2 animate-pulse group-hover:bg-white" />
+        <div className="flex flex-col items-center">
+          <div className="w-8 h-12 border-2 border-white/60 rounded-full flex justify-center group-hover:border-white transition-colors">
+            <div className="w-1 h-4 bg-white/60 rounded-full mt-2 animate-pulse group-hover:bg-white" />
+          </div>
+          <ArrowDown className="w-5 h-5 text-white/60 mt-2 group-hover:text-white transition-colors" />
+          <p className="text-white/60 text-xs mt-1 font-medium group-hover:text-white transition-colors">اكتشف المزيد</p>
         </div>
-        <p className="text-white/60 text-xs mt-2 font-medium text-center group-hover:text-white transition-colors">اكتشف المزيد</p>
       </div>
     </section>
   );
