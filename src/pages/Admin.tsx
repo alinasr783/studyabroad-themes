@@ -30,12 +30,23 @@ const Admin = () => {
       // Check manager credentials
       const { data: manager } = await supabase
         .from('managers')
-        .select('*')
+        .select('*, clients(*)')
         .eq('email', formData.email)
         .eq('password', formData.password)
         .single();
 
       if (manager) {
+        // Store manager session with client_id
+        localStorage.setItem("manager_session", JSON.stringify({
+          id: manager.id,
+          email: manager.email,
+          client_id: manager.client_id,
+          client: manager.clients
+        }));
+        
+        // Store client_id separately for easy access
+        localStorage.setItem("client_id", manager.client_id || "00000000-0000-0000-0000-000000000001");
+        
         setIsLoggedIn(true);
         toast({
           title: "تم تسجيل الدخول بنجاح",

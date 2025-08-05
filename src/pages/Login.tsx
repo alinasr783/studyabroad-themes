@@ -57,6 +57,9 @@ const Login = () => {
         client: data.clients
       }));
 
+      // Store client_id separately for easy access
+      localStorage.setItem("client_id", data.client_id || "00000000-0000-0000-0000-000000000001");
+
       toast({
         title: "تم تسجيل الدخول بنجاح",
         description: "مرحبًا بك في لوحة التحكم",

@@ -44,9 +44,15 @@ const ConsultationForm = ({ onClose, programName }: ConsultationFormProps) => {
     setLoading(true);
 
     try {
+      // Get client_id from settings or use default
+      const clientId = "00000000-0000-0000-0000-000000000001";
+      
       const { error } = await supabase
         .from('consultations')
-        .insert([formData]);
+        .insert([{
+          ...formData,
+          client_id: clientId
+        }]);
 
       if (error) throw error;
 
