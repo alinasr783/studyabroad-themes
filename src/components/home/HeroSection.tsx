@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Phone, Star, Users, Globe, Award, CheckCircle, ArrowDown } from "lucide-react";
 import { useState, useEffect } from "react";
-import heroImage from "@/assets/study-background.jpg";
+import heroImage from "@/assets/harvard-university.jpg";
 import { supabase } from "@/integrations/supabase/client";
 
 interface SiteSettings {
@@ -81,7 +81,7 @@ const HeroSection = () => {
                   size="lg" 
                   className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white shadow-2xl transform hover:scale-105 transition-all duration-300 text-lg px-8 py-6 font-bold border-0"
                 >
-                  🚀 ابدأ رحلتك الآن
+                  ابدأ رحلتك الآن
                   <ArrowRight className="mr-2 h-6 w-6" />
                 </Button>
                 <Button 
@@ -90,15 +90,15 @@ const HeroSection = () => {
                   className="border-2 border-white text-white hover:bg-white hover:text-primary backdrop-blur-sm transform hover:scale-105 transition-all duration-300 text-lg px-8 py-6 font-bold bg-white/10"
                 >
                   <Phone className="ml-2 h-6 w-6" />
-                  📞 تواصل معنا مجاناً
+                  تواصل معنا مجاناً
                 </Button>
               </div>
 
               {/* Trust Indicators */}
               <div className="flex flex-wrap items-center gap-4 pt-6 border-t border-white/20">
-                <div className="text-white/90">⭐ 5000+ طالب</div>
+                <div className="text-white/90">5000+ طالب</div>
                 <div className="text-white/70">|</div>
-                <div className="text-white/90">🏆 15 عام خبرة</div>
+                <div className="text-white/90">15 عام خبرة</div>
               </div>
             </div>
 
