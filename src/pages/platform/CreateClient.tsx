@@ -52,36 +52,54 @@ const CreateClient = () => {
     setDeploymentLoading(true);
     
     try {
-      // This is a placeholder for Vercel deployment
-      // In a real implementation, you would call Vercel API here
-      console.log("Deploying to Vercel...", {
-        clientId,
-        siteName: formData.site_name,
-        slug: formData.slug
+      // Step 1: Create GitHub repository
+      console.log("Creating GitHub repository...");
+      const githubResponse = await supabase.functions.invoke('create-github-repo', {
+        body: {
+          siteName: formData.site_name,
+          slug: formData.slug,
+          clientId: clientId
+        }
       });
-      
-      // Simulate deployment process
-      await new Promise(resolve => setTimeout(resolve, 3000));
-      
+
+      if (githubResponse.error) {
+        throw new Error(`GitHub creation failed: ${githubResponse.error.message}`);
+      }
+
+      const { repoUrl } = githubResponse.data;
+      console.log("GitHub repository created:", repoUrl);
+
+      // Step 2: Deploy to Vercel
+      console.log("Deploying to Vercel...");
+      const vercelResponse = await supabase.functions.invoke('deploy-to-vercel', {
+        body: {
+          siteName: formData.site_name,
+          slug: formData.slug,
+          clientId: clientId,
+          githubRepoUrl: repoUrl
+        }
+      });
+
+      if (vercelResponse.error) {
+        throw new Error(`Vercel deployment failed: ${vercelResponse.error.message}`);
+      }
+
+      const { projectUrl } = vercelResponse.data;
+      console.log("Vercel deployment successful:", projectUrl);
+
       toast({
         title: "تم رفع الموقع بنجاح",
-        description: `الموقع متاح الآن على: https://${formData.slug}.vercel.app`,
+        description: `الموقع متاح الآن على: ${projectUrl}`,
       });
+
+      // Update client record with deployment URLs
+      console.log("Updating client record with deployment info...");
       
-      // Here you would normally update the client record with the Vercel URL
-      await supabase
-        .from('clients')
-        .update({ 
-          vercel_url: `https://${formData.slug}.vercel.app`,
-          deployment_status: 'deployed'
-        })
-        .eq('id', clientId);
-        
     } catch (error) {
       console.error("Deployment error:", error);
       toast({
         title: "خطأ في الرفع",
-        description: "حدث خطأ أثناء رفع الموقع على Vercel",
+        description: error instanceof Error ? error.message : "حدث خطأ أثناء رفع الموقع",
         variant: "destructive"
       });
     } finally {

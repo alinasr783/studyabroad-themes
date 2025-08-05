@@ -24,6 +24,11 @@ import AdminPrograms from "./pages/admin/AdminPrograms";
 import AdminArticles from "./pages/admin/AdminArticles";
 import AdminTestimonials from "./pages/admin/AdminTestimonials";
 import AdminManagers from "./pages/admin/AdminManagers";
+import PlatformLogin from "./pages/platform/PlatformLogin";
+import PlatformDashboard from "./pages/platform/PlatformDashboard";
+import CreateClient from "./pages/platform/CreateClient";
+import PlatformStats from "./pages/platform/PlatformStats";
+import PlatformUsers from "./pages/platform/PlatformUsers";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -58,6 +63,11 @@ const App = () => (
           <Route path="/admin/messages" element={<AdminMessages />} />
           <Route path="/admin/managers" element={<AdminManagers />} />
           <Route path="/admin/settings" element={<AdminSettings />} />
+          <Route path="/platform/login" element={<PlatformLogin />} />
+          <Route path="/platform/dashboard" element={<PlatformDashboard />} />
+          <Route path="/platform/create-client" element={<CreateClient />} />
+          <Route path="/platform/stats" element={<PlatformStats />} />
+          <Route path="/platform/users" element={<PlatformUsers />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

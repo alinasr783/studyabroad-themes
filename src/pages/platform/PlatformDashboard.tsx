@@ -387,7 +387,10 @@ const PlatformDashboard = () => {
 
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+          <Card 
+            className="hover:shadow-lg transition-shadow cursor-pointer"
+            onClick={() => navigate("/platform/stats")}
+          >
             <CardContent className="p-6 text-center">
               <BarChart3 className="w-12 h-12 text-blue-500 mx-auto mb-4" />
               <h3 className="font-semibold mb-2">الإحصائيات المفصلة</h3>
@@ -395,7 +398,10 @@ const PlatformDashboard = () => {
             </CardContent>
           </Card>
 
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+          <Card 
+            className="hover:shadow-lg transition-shadow cursor-pointer"
+            onClick={() => navigate("/platform/users")}
+          >
             <CardContent className="p-6 text-center">
               <Users className="w-12 h-12 text-green-500 mx-auto mb-4" />
               <h3 className="font-semibold mb-2">إدارة المستخدمين</h3>

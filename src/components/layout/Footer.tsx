@@ -11,7 +11,8 @@ import {
   Twitter,
   Instagram,
   Linkedin,
-  Youtube
+  Youtube,
+  Crown
 } from "lucide-react";
 
 const Footer = () => {
@@ -158,6 +159,13 @@ const Footer = () => {
             </Link>
             <Link to="/admin" className="text-sm text-muted-foreground hover:text-primary">
               هل أنت مدير الموقع؟ تسجيل الدخول
+            </Link>
+            <Link 
+              to="/platform/login" 
+              className="text-sm text-muted-foreground hover:text-purple-600 flex items-center space-x-1 space-x-reverse"
+            >
+              <Crown className="w-3 h-3" />
+              <span>Platform Owner</span>
             </Link>
           </div>
         </div>

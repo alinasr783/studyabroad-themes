@@ -94,6 +94,9 @@ export type Database = {
       clients: {
         Row: {
           created_at: string
+          deployment_status: string | null
+          description: string | null
+          github_repo_url: string | null
           id: string
           is_active: boolean
           logo_url: string | null
@@ -103,9 +106,13 @@ export type Database = {
           primary_color_3: string
           slug: string
           updated_at: string
+          vercel_url: string | null
         }
         Insert: {
           created_at?: string
+          deployment_status?: string | null
+          description?: string | null
+          github_repo_url?: string | null
           id?: string
           is_active?: boolean
           logo_url?: string | null
@@ -115,9 +122,13 @@ export type Database = {
           primary_color_3?: string
           slug: string
           updated_at?: string
+          vercel_url?: string | null
         }
         Update: {
           created_at?: string
+          deployment_status?: string | null
+          description?: string | null
+          github_repo_url?: string | null
           id?: string
           is_active?: boolean
           logo_url?: string | null
@@ -127,6 +138,7 @@ export type Database = {
           primary_color_3?: string
           slug?: string
           updated_at?: string
+          vercel_url?: string | null
         }
         Relationships: []
       }
