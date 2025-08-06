@@ -10,7 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Plus, Edit, Trash2, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { articlesApi } from "@/lib/api";
+import { supabase } from "@/integrations/supabase/client";
 import AdminLayout from "@/components/admin/AdminLayout";
 
 interface Article {
@@ -20,18 +20,19 @@ interface Article {
   slug: string;
   content_ar: string;
   content_en: string;
-  excerpt_ar?: string;
-  excerpt_en?: string;
-  featured_image?: string;
-  author_name?: string;
-  author_avatar?: string;
-  category?: string;
-  tags?: string[];
-  is_published: boolean;
-  is_featured: boolean;
-  views_count: number;
-  reading_time?: number;
+  excerpt_ar?: string | null;
+  excerpt_en?: string | null;
+  featured_image?: string | null;
+  author_name?: string | null;
+  author_avatar?: string | null;
+  category?: string | null;
+  tags?: string[] | null;
+  is_published: boolean | null;
+  is_featured: boolean | null;
+  views_count: number | null;
+  reading_time?: number | null;
   created_at: string;
+  updated_at: string;
 }
 
 const AdminArticles = () => {
@@ -185,8 +186,8 @@ const AdminArticles = () => {
       author_avatar: article.author_avatar || "",
       category: article.category || "",
       tags: article.tags?.join(", ") || "",
-      is_published: article.is_published,
-      is_featured: article.is_featured,
+      is_published: article.is_published || false,
+      is_featured: article.is_featured || false,
       reading_time: article.reading_time?.toString() || "",
     });
     setShowForm(true);

@@ -4,7 +4,7 @@ import Layout from "@/components/layout/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { articlesApi, countriesApi, universitiesApi, programsApi, consultationsApi, contactMessagesApi, testimonialsApi } from "@/lib/api";
+import { supabase } from "@/integrations/supabase/client";
 import { MapPin, DollarSign, Star, TrendingUp, Globe } from "lucide-react";
 
 interface Country {

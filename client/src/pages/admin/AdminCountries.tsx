@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { articlesApi, countriesApi, universitiesApi, programsApi, consultationsApi, contactMessagesApi, testimonialsApi } from "@/lib/api";
+import { supabase } from "@/integrations/supabase/client";
 import { Plus, Edit, Trash2, Globe, MapPin, DollarSign } from "lucide-react";
 import AdminLayout from "@/components/admin/AdminLayout";
 
@@ -17,21 +17,24 @@ interface Country {
   name_ar: string;
   name_en: string;
   slug: string;
-  description_ar?: string;
-  description_en?: string;
-  flag_url?: string;
-  image_url?: string;
-  language?: string;
-  currency?: string;
-  climate?: string;
-  visa_requirements_ar?: string;
-  visa_requirements_en?: string;
-  popular_cities?: string[];
-  study_cost_min?: number;
-  study_cost_max?: number;
-  living_cost_min?: number;
-  living_cost_max?: number;
-  is_trending: boolean;
+  description_ar?: string | null;
+  description_en?: string | null;
+  flag_url?: string | null;
+  image_url?: string | null;
+  language?: string | null;
+  currency?: string | null;
+  climate?: string | null;
+  visa_requirements_ar?: string | null;
+  visa_requirements_en?: string | null;
+  popular_cities?: string[] | null;
+  study_cost_min?: number | null;
+  study_cost_max?: number | null;
+  living_cost_min?: number | null;
+  living_cost_max?: number | null;
+  is_trending: boolean | null;
+  client_id?: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 const AdminCountries = () => {
