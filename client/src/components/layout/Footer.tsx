@@ -39,36 +39,36 @@ const Footer = () => {
   ];
 
   return (
-    <footer className="bg-muted/30 border-t">
-      <div className="container py-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {/* Company Info */}
+    <footer className="bg-background border-t">
+      <div className="container px-4 py-12 mx-auto">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+
+          {/* معلومات الشركة */}
           <div className="space-y-4">
-            <Link to="/" className="flex items-center space-x-2 rtl:space-x-reverse">
+            <Link to="/" className="flex items-center gap-3">
               <div className="flex items-center justify-center w-10 h-10 bg-gradient-to-br from-primary to-secondary rounded-lg">
                 <GraduationCap className="h-6 w-6 text-white" />
               </div>
               <div className="flex flex-col">
-                <span className="font-cairo font-bold text-lg">Study Abroad</span>
-                <span className="font-cairo text-sm text-muted-foreground">دليلك للدراسة في الخارج</span>
+                <span className="font-bold text-lg">Study Abroad</span>
+                <span className="text-sm text-muted-foreground">دليلك للدراسة في الخارج</span>
               </div>
             </Link>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              نحن نساعدك في العثور على أفضل الجامعات والبرامج الدراسية حول العالم. 
-              رحلتك التعليمية تبدأ من هنا.
+              نوفر لك أحدث المعلومات عن الجامعات والبرامج الدراسية حول العالم لمساعدتك في رحلتك التعليمية.
             </p>
-            <div className="flex space-x-2 rtl:space-x-reverse">
+            <div className="flex gap-2">
               {socialLinks.map((social) => {
                 const Icon = social.icon;
                 return (
                   <Button
                     key={social.label}
-                    variant="ghost"
-                    size="sm"
-                    className="h-9 w-9 p-0 hover:bg-primary hover:text-white"
+                    variant="outline"
+                    size="icon"
+                    className="h-9 w-9 rounded-full hover:bg-primary hover:text-white transition-colors"
                     asChild
                   >
-                    <a href={social.href} target="_blank" rel="noopener noreferrer">
+                    <a href={social.href} aria-label={social.label}>
                       <Icon className="h-4 w-4" />
                     </a>
                   </Button>
@@ -77,16 +77,17 @@ const Footer = () => {
             </div>
           </div>
 
-          {/* Quick Links */}
+          {/* روابط سريعة */}
           <div className="space-y-4">
-            <h3 className="font-cairo font-semibold text-lg">روابط سريعة</h3>
-            <ul className="space-y-2">
+            <h3 className="font-semibold text-lg">روابط سريعة</h3>
+            <ul className="space-y-3">
               {quickLinks.map((link) => (
                 <li key={link.name}>
                   <Link
                     to={link.href}
-                    className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                    className="text-sm text-muted-foreground hover:text-primary transition-colors flex items-center gap-2"
                   >
+                    <span className="w-1 h-1 bg-muted-foreground rounded-full"></span>
                     {link.name}
                   </Link>
                 </li>
@@ -94,16 +95,17 @@ const Footer = () => {
             </ul>
           </div>
 
-          {/* Resources */}
+          {/* مصادر */}
           <div className="space-y-4">
-            <h3 className="font-cairo font-semibold text-lg">المصادر</h3>
-            <ul className="space-y-2">
+            <h3 className="font-semibold text-lg">المصادر</h3>
+            <ul className="space-y-3">
               {resources.map((link) => (
                 <li key={link.name}>
                   <Link
                     to={link.href}
-                    className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                    className="text-sm text-muted-foreground hover:text-primary transition-colors flex items-center gap-2"
                   >
+                    <span className="w-1 h-1 bg-muted-foreground rounded-full"></span>
                     {link.name}
                   </Link>
                 </li>
@@ -111,58 +113,63 @@ const Footer = () => {
             </ul>
           </div>
 
-          {/* Contact & Newsletter */}
+          {/* تواصل معنا */}
           <div className="space-y-4">
-            <h3 className="font-cairo font-semibold text-lg">تواصل معنا</h3>
+            <h3 className="font-semibold text-lg">تواصل معنا</h3>
             <div className="space-y-3">
-              <div className="flex items-center space-x-3 rtl:space-x-reverse text-sm text-muted-foreground">
-                <Phone className="h-4 w-4 text-primary" />
+              <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                <Phone className="h-4 w-4 text-primary flex-shrink-0" />
                 <span>+966 50 123 4567</span>
               </div>
-              <div className="flex items-center space-x-3 rtl:space-x-reverse text-sm text-muted-foreground">
-                <Mail className="h-4 w-4 text-primary" />
+              <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                <Mail className="h-4 w-4 text-primary flex-shrink-0" />
                 <span>info@studyabroad.com</span>
               </div>
-              <div className="flex items-center space-x-3 rtl:space-x-reverse text-sm text-muted-foreground">
-                <MapPin className="h-4 w-4 text-primary" />
+              <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                <MapPin className="h-4 w-4 text-primary flex-shrink-0" />
                 <span>الرياض، المملكة العربية السعودية</span>
               </div>
             </div>
-            
-            <div className="space-y-2">
-              <h4 className="font-cairo font-medium">اشترك في النشرة الإخبارية</h4>
-              <div className="flex space-x-2 rtl:space-x-reverse">
+
+            <div className="space-y-3">
+              <h4 className="font-medium">النشرة الإخبارية</h4>
+              <form className="flex flex-col sm:flex-row gap-2">
                 <Input 
                   type="email" 
                   placeholder="بريدك الإلكتروني" 
-                  className="text-sm"
+                  className="flex-1 text-sm"
+                  required
                 />
-                <Button size="sm" className="bg-gradient-to-r from-primary to-secondary">
+                <Button 
+                  size="sm" 
+                  className="bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90"
+                  type="submit"
+                >
                   اشترك
                 </Button>
-              </div>
+              </form>
             </div>
           </div>
         </div>
 
-        {/* Bottom Section */}
-        <div className="border-t mt-8 pt-8 flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
-          <p className="text-sm text-muted-foreground">
-            © 2024 Study Abroad Buddy. جميع الحقوق محفوظة.
+        {/* حقوق النشر */}
+        <div className="border-t mt-8 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
+          <p className="text-sm text-muted-foreground text-center md:text-start">
+            © {new Date().getFullYear()} Study Abroad. جميع الحقوق محفوظة.
           </p>
-          <div className="flex items-center space-x-4 rtl:space-x-reverse">
-            <Link to="/privacy" className="text-sm text-muted-foreground hover:text-primary">
+          <div className="flex flex-wrap justify-center gap-4">
+            <Link to="/privacy" className="text-sm text-muted-foreground hover:text-primary transition-colors">
               سياسة الخصوصية
             </Link>
-            <Link to="/terms" className="text-sm text-muted-foreground hover:text-primary">
+            <Link to="/terms" className="text-sm text-muted-foreground hover:text-primary transition-colors">
               الشروط والأحكام
             </Link>
-            <Link to="/admin" className="text-sm text-muted-foreground hover:text-primary">
-              هل أنت مدير الموقع؟ تسجيل الدخول
+            <Link to="/admin" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+              تسجيل دخول المدير
             </Link>
             <Link 
               to="/platform/login" 
-              className="text-sm text-muted-foreground hover:text-purple-600 flex items-center space-x-1 space-x-reverse"
+              className="text-sm text-muted-foreground hover:text-purple-600 transition-colors flex items-center gap-1"
             >
               <Crown className="w-3 h-3" />
               <span>Platform Owner</span>

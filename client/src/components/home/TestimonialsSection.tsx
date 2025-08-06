@@ -51,60 +51,65 @@ const TestimonialsSection = () => {
   ];
 
   return (
-    <section className="py-20 bg-muted/30">
-      <div className="container">
-        <div className="text-center space-y-4 mb-16">
-          <div className="flex items-center justify-center space-x-2 rtl:space-x-reverse mb-4">
-            <Quote className="h-8 w-8 text-primary" />
-            <h2 className="text-3xl lg:text-4xl font-bold">
+    <section className="py-12 md:py-20 bg-muted/30">
+      <div className="container px-4 sm:px-6 lg:px-8 mx-auto">
+        {/* العنوان الرئيسي */}
+        <div className="text-center mb-12 md:mb-16">
+          <div className="inline-flex items-center justify-center gap-2 mb-4">
+            <Quote className="h-6 w-6 md:h-8 md:w-8 text-primary flex-shrink-0" />
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold bg-clip-text">
               قصص <span className="text-primary">النجاح</span>
             </h2>
           </div>
-          <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
+          <p className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-3xl mx-auto leading-relaxed">
             اكتشف كيف ساعدنا آلاف الطلاب في تحقيق أحلامهم والدراسة في أفضل الجامعات حول العالم
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-8">
+        {/* بطاقات آراء العملاء */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
           {testimonials.map((testimonial) => (
             <Card 
               key={testimonial.id}
-              className="group hover:shadow-xl transition-all duration-300 border-0 bg-background relative overflow-hidden"
+              className="group hover:shadow-lg transition-all duration-300 border border-gray-200 dark:border-gray-700 bg-background rounded-xl overflow-hidden hover:border-primary/50"
             >
-              <CardContent className="p-6">
-                {/* Quote Icon */}
-                <div className="absolute top-4 right-4 opacity-10">
-                  <Quote className="h-16 w-16 text-primary" />
+              <CardContent className="p-5 sm:p-6">
+                {/* أيقونة الاقتباس الخلفية */}
+                <div className="absolute top-4 right-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                  <Quote className="h-20 w-20 text-primary" />
                 </div>
 
-                {/* Rating */}
-                <div className="flex items-center space-x-1 rtl:space-x-reverse mb-4">
-                  {[...Array(testimonial.rating)].map((_, i) => (
-                    <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                {/* التقييم */}
+                <div className="flex items-center gap-1 mb-3">
+                  {[...Array(5)].map((_, i) => (
+                    <Star 
+                      key={i} 
+                      className={`h-4 w-4 ${i < testimonial.rating ? 'fill-yellow-400 text-yellow-400' : 'fill-gray-300 text-gray-300'}`} 
+                    />
                   ))}
                 </div>
 
-                {/* Content */}
-                <blockquote className="text-muted-foreground leading-relaxed mb-6 relative z-10">
+                {/* محتوى الرأي */}
+                <blockquote className="text-sm sm:text-base text-muted-foreground leading-relaxed mb-5 relative z-10">
                   "{testimonial.content}"
                 </blockquote>
 
-                {/* Student Info */}
+                {/* معلومات الطالب */}
                 <div className="border-t pt-4">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-1">
-                      <div className="flex items-center space-x-2 rtl:space-x-reverse">
-                        <h4 className="font-semibold">{testimonial.name}</h4>
-                        <Badge variant="outline" className="text-xs">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-medium text-base">{testimonial.name}</h4>
+                        <Badge variant="secondary" className="text-xs py-0.5">
                           {testimonial.year}
                         </Badge>
                       </div>
-                      <div className="flex items-center space-x-2 rtl:space-x-reverse text-sm text-muted-foreground">
-                        <GraduationCap className="h-4 w-4" />
+                      <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
+                        <GraduationCap className="h-3 w-3 sm:h-4 sm:w-4" />
                         <span>{testimonial.program}</span>
                       </div>
-                      <div className="flex items-center space-x-2 rtl:space-x-reverse text-sm text-muted-foreground">
-                        <span className="text-lg">{testimonial.flag}</span>
+                      <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
+                        <span className="text-base">{testimonial.flag}</span>
                         <span>{testimonial.university}</span>
                       </div>
                     </div>
@@ -115,24 +120,23 @@ const TestimonialsSection = () => {
           ))}
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mt-16 pt-16 border-t">
-          <div className="text-center space-y-2">
-            <div className="text-4xl font-bold text-primary">10,000+</div>
-            <div className="text-sm text-muted-foreground">طالب نجح</div>
-          </div>
-          <div className="text-center space-y-2">
-            <div className="text-4xl font-bold text-secondary">500+</div>
-            <div className="text-sm text-muted-foreground">جامعة شريكة</div>
-          </div>
-          <div className="text-center space-y-2">
-            <div className="text-4xl font-bold text-primary">50+</div>
-            <div className="text-sm text-muted-foreground">دولة متاحة</div>
-          </div>
-          <div className="text-center space-y-2">
-            <div className="text-4xl font-bold text-secondary">98%</div>
-            <div className="text-sm text-muted-foreground">نسبة النجاح</div>
-          </div>
+        {/* الإحصائيات */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6 mt-12 md:mt-16 pt-12 border-t">
+          {[
+            { value: "10,000+", label: "طالب نجح", color: "text-primary" },
+            { value: "500+", label: "جامعة شريكة", color: "text-secondary" },
+            { value: "50+", label: "دولة متاحة", color: "text-primary" },
+            { value: "98%", label: "نسبة النجاح", color: "text-secondary" },
+          ].map((stat, index) => (
+            <div key={index} className="text-center space-y-1">
+              <div className={`text-2xl sm:text-3xl md:text-4xl font-bold ${stat.color}`}>
+                {stat.value}
+              </div>
+              <div className="text-xs sm:text-sm text-muted-foreground">
+                {stat.label}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </section>

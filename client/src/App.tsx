@@ -9,7 +9,8 @@ import CountryDetail from "./pages/CountryDetail";
 import Universities from "./pages/Universities";
 import UniversityDetail from "./pages/UniversityDetail";
 import Programs from "./pages/Programs";
-import Articles from "./pages/Articles";
+import ArticlesList from "./pages/Articles"; // تم تغيير الاسم
+import ArticleDetail from "./pages/ArticleDetail"; // صفحة جديدة
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import Admin from "./pages/Admin";
@@ -47,8 +48,8 @@ const App = () => (
           <Route path="/universities/:slug" element={<UniversityDetail />} />
           <Route path="/programs" element={<Programs />} />
           <Route path="/programs/:slug" element={<Programs />} />
-          <Route path="/articles" element={<Articles />} />
-          <Route path="/articles/:slug" element={<Articles />} />
+          <Route path="/articles" element={<ArticlesList />} /> {/* تم التغيير */}
+          <Route path="/articles/:slug" element={<ArticleDetail />} /> {/* صفحة جديدة */}
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/admin" element={<Admin />} />

@@ -4,7 +4,6 @@ import Layout from "@/components/layout/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { supabase } from "@/integrations/supabase/client";
 import { Calendar, DollarSign, Clock, GraduationCap, BookOpen, MapPin, Star } from "lucide-react";
 import ConsultationForm from "@/components/forms/ConsultationForm";
 
@@ -40,56 +39,147 @@ const Programs = () => {
   const { slug } = useParams();
   const [programs, setPrograms] = useState<Program[]>([]);
   const [selectedProgram, setSelectedProgram] = useState<Program | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [showConsultationForm, setShowConsultationForm] = useState(false);
+
+  // بيانات وهمية للجامعات
+  const dummyUniversities = [
+    {
+      name_ar: "جامعة هارفارد",
+      logo_url: "https://upload.wikimedia.org/wikipedia/commons/thumb/7/70/Harvard_University_logo.svg/1200px-Harvard_University_logo.svg.png",
+      city: "كامبريدج",
+      countries: {
+        name_ar: "الولايات المتحدة",
+        flag_url: "https://flagcdn.com/w320/us.png"
+      }
+    },
+    {
+      name_ar: "جامعة أكسفورد",
+      logo_url: "https://upload.wikimedia.org/wikipedia/commons/thumb/f/ff/University_of_Oxford.svg/1200px-University_of_Oxford.svg.png",
+      city: "أكسفورد",
+      countries: {
+        name_ar: "المملكة المتحدة",
+        flag_url: "https://flagcdn.com/w320/gb.png"
+      }
+    },
+    {
+      name_ar: "جامعة ستانفورد",
+      logo_url: "https://upload.wikimedia.org/wikipedia/commons/thumb/f/fe/Stanford_University_logo_2008.svg/1200px-Stanford_University_logo_2008.svg.png",
+      city: "ستانفورد",
+      countries: {
+        name_ar: "الولايات المتحدة",
+        flag_url: "https://flagcdn.com/w320/us.png"
+      }
+    }
+  ];
+
+  // بيانات وهمية للبرامج
+  const dummyPrograms: Program[] = [
+    {
+      id: "1",
+      name_ar: "بكالوريوس علوم الحاسوب",
+      name_en: "Bachelor of Computer Science",
+      slug: "computer-science",
+      degree_level: "بكالوريوس",
+      field_of_study: "علوم الحاسوب",
+      duration_years: 4,
+      tuition_fee: 25000,
+      description_ar: "برنامج متكامل في علوم الحاسوب يشمل البرمجة، الخوارزميات، قواعد البيانات، الذكاء الاصطناعي وأمن المعلومات. يهدف البرنامج إلى تخريج متخصصين مؤهلين لسوق العمل التقني.",
+      requirements_ar: "شهادة ثانوية بمعدل لا يقل عن 85% - اجتياز اختبار الرياضيات - شهادة لغة انجليزية (توفل 80 أو آيلتس 6.0)",
+      career_prospects_ar: "مبرمج - مهندس برمجيات - محلل نظم - خبير أمن معلوماتي - مطور تطبيقات",
+      language: "الإنجليزية",
+      start_date: "2024-09-01",
+      application_deadline: "2024-05-15",
+      is_featured: true,
+      universities: dummyUniversities[0]
+    },
+    {
+      id: "2",
+      name_ar: "ماجستير إدارة الأعمال",
+      name_en: "Master of Business Administration",
+      slug: "mba",
+      degree_level: "ماجستير",
+      field_of_study: "إدارة الأعمال",
+      duration_years: 2,
+      tuition_fee: 35000,
+      description_ar: "برنامج MBA مصمم لتطوير المهارات القيادية والإدارية مع التركيز على حالات دراسية واقعية. يشمل تخصصات فرعية في التسويق، التمويل، الموارد البشرية.",
+      requirements_ar: "بكالوريوس في أي تخصص - خبرة عمل لا تقل عن سنتين - رسائل توصية - مقابلة شخصية - شهادة لغة انجليزية (توفل 90 أو آيلتس 6.5)",
+      career_prospects_ar: "مدير تنفيذي - مدير مشاريع - استشاري إداري - رائد أعمال - مدير تسويق",
+      language: "الإنجليزية",
+      start_date: "2024-10-01",
+      application_deadline: "2024-06-30",
+      is_featured: true,
+      universities: dummyUniversities[1]
+    },
+    {
+      id: "3",
+      name_ar: "دكتوراه في الهندسة الكهربائية",
+      name_en: "PhD in Electrical Engineering",
+      slug: "electrical-engineering",
+      degree_level: "دكتوراه",
+      field_of_study: "الهندسة الكهربائية",
+      duration_years: 4,
+      tuition_fee: 28000,
+      description_ar: "برنامج دكتوراه متقدم في الهندسة الكهربائية مع فرص بحثية في مجالات الطاقة المتجددة، الأنظمة الذكية، معالجة الإشارات والاتصالات.",
+      requirements_ar: "ماجستير في الهندسة الكهربائية أو تخصص ذو صلة - مقترح بحث - رسائل توصية - مقابلة مع المشرفين المحتملين",
+      career_prospects_ar: "باحث أكاديمي - مهندس تصميم - استشاري تقني - مدير مشاريع هندسية",
+      language: "الإنجليزية",
+      start_date: "2024-09-15",
+      application_deadline: "2024-04-01",
+      is_featured: false,
+      universities: dummyUniversities[2]
+    },
+    {
+      id: "4",
+      name_ar: "بكالوريوس الطب والجراحة",
+      name_en: "Bachelor of Medicine and Surgery",
+      slug: "medicine",
+      degree_level: "بكالوريوس",
+      field_of_study: "الطب البشري",
+      duration_years: 6,
+      tuition_fee: 40000,
+      description_ar: "برنامج متكامل في الطب البشري يؤهل الطلاب لممارسة المهنة بعد التخرج والتخصص. يشمل تدريبات عملية في مستشفيات تعليمية.",
+      requirements_ar: "شهادة ثانوية علمية بمعدل لا يقل عن 90% - اجتياز اختبار القبول الطبي - مقابلة شخصية - شهادة لغة انجليزية (توفل 85 أو آيلتس 6.5)",
+      career_prospects_ar: "طبيب عام - أخصائي بعد التخصص - باحث طبي - استشاري",
+      language: "الإنجليزية",
+      start_date: "2024-08-01",
+      application_deadline: "2024-03-15",
+      is_featured: true,
+      universities: dummyUniversities[0]
+    },
+    {
+      id: "5",
+      name_ar: "ماجستير علم البيانات",
+      name_en: "Master of Data Science",
+      slug: "data-science",
+      degree_level: "ماجستير",
+      field_of_study: "علم البيانات",
+      duration_years: 1.5,
+      tuition_fee: 32000,
+      description_ar: "برنامج متخصص في علم البيانات يشمل تعلم الآلة، التحليل الإحصائي، معالجة البيانات الضخمة وتطبيقات الذكاء الاصطناعي.",
+      requirements_ar: "بكالوريوس في علوم الحاسوب، الرياضيات أو تخصص ذو صلة - معرفة بلغات البرمجة - شهادة لغة انجليزية (توفل 85 أو آيلتس 6.5)",
+      career_prospects_ar: "عالم بيانات - محلل بيانات - مهندس تعلم آلي - باحث في الذكاء الاصطناعي",
+      language: "الإنجليزية",
+      start_date: "2024-11-01",
+      application_deadline: "2024-07-15",
+      is_featured: false,
+      universities: dummyUniversities[1]
+    }
+  ];
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
-      
+
       if (slug) {
-        // Fetch specific program
-        const { data: programData } = await supabase
-          .from('programs')
-          .select(`
-            *,
-            universities (
-              name_ar,
-              logo_url,
-              city,
-              countries (
-                name_ar,
-                flag_url
-              )
-            )
-          `)
-          .eq('slug', slug)
-          .single();
-        
-        if (programData) {
-          setSelectedProgram(programData);
-        }
+        // البحث عن البرنامج المحدد في البيانات الوهمية
+        const programData = dummyPrograms.find(p => p.slug === slug) || null;
+        setSelectedProgram(programData);
       } else {
-        // Fetch all programs
-        const { data: programsData } = await supabase
-          .from('programs')
-          .select(`
-            *,
-            universities (
-              name_ar,
-              logo_url,
-              city,
-              countries (
-                name_ar,
-                flag_url
-              )
-            )
-          `)
-          .order('name_ar');
-        
-        setPrograms(programsData || []);
+        // استخدام جميع البرامج الوهمية
+        setPrograms(dummyPrograms);
       }
-      
+
       setLoading(false);
     };
 
@@ -243,7 +333,7 @@ const Programs = () => {
                       </div>
                     </div>
                   )}
-                  
+
                   {selectedProgram.tuition_fee && (
                     <div className="flex items-center gap-3">
                       <DollarSign className="w-5 h-5 text-primary" />
@@ -255,7 +345,7 @@ const Programs = () => {
                       </div>
                     </div>
                   )}
-                  
+
                   {selectedProgram.language && (
                     <div className="flex items-center gap-3">
                       <BookOpen className="w-5 h-5 text-primary" />
@@ -265,7 +355,7 @@ const Programs = () => {
                       </div>
                     </div>
                   )}
-                  
+
                   {selectedProgram.start_date && (
                     <div className="flex items-center gap-3">
                       <Calendar className="w-5 h-5 text-primary" />
@@ -277,7 +367,7 @@ const Programs = () => {
                       </div>
                     </div>
                   )}
-                  
+
                   {selectedProgram.application_deadline && (
                     <div className="flex items-center gap-3">
                       <Clock className="w-5 h-5 text-primary" />
@@ -359,7 +449,7 @@ const Programs = () => {
                     </Badge>
                   )}
                 </div>
-                
+
                 {program.universities && (
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     {program.universities.countries?.flag_url && (
@@ -379,12 +469,12 @@ const Programs = () => {
                   </div>
                 )}
               </CardHeader>
-              
+
               <CardContent>
                 <p className="text-muted-foreground mb-4 line-clamp-3">
                   {program.description_ar}
                 </p>
-                
+
                 <div className="space-y-2 mb-4">
                   {program.duration_years && (
                     <div className="flex items-center gap-2 text-sm">
@@ -405,7 +495,7 @@ const Programs = () => {
                     </div>
                   )}
                 </div>
-                
+
                 <Button asChild className="w-full">
                   <Link to={`/programs/${program.slug}`}>
                     تفاصيل البرنامج
