@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { supabase } from "@/integrations/supabase/client";
+import { dashboardApi } from "@/lib/api";
 import { Globe, GraduationCap, BookOpen, FileText, MessageSquare, Star } from "lucide-react";
 import AdminLayout from "@/components/admin/AdminLayout";
 
@@ -37,33 +37,8 @@ const AdminDashboard = () => {
 
       const { client_id } = JSON.parse(session);
 
-      const [
-        countriesRes,
-        universitiesRes,
-        programsRes,
-        articlesRes,
-        consultationsRes,
-        messagesRes,
-        testimonialsRes,
-      ] = await Promise.all([
-        supabase.from("countries").select("id", { count: "exact" }).eq("client_id", client_id),
-        supabase.from("universities").select("id", { count: "exact" }).eq("client_id", client_id),
-        supabase.from("programs").select("id", { count: "exact" }).eq("client_id", client_id),
-        supabase.from("articles").select("id", { count: "exact" }).eq("client_id", client_id),
-        supabase.from("consultations").select("id", { count: "exact" }).eq("client_id", client_id),
-        supabase.from("contact_messages").select("id", { count: "exact" }).eq("client_id", client_id),
-        supabase.from("testimonials").select("id", { count: "exact" }).eq("client_id", client_id),
-      ]);
-
-      setStats({
-        countries: countriesRes.count || 0,
-        universities: universitiesRes.count || 0,
-        programs: programsRes.count || 0,
-        articles: articlesRes.count || 0,
-        consultations: consultationsRes.count || 0,
-        messages: messagesRes.count || 0,
-        testimonials: testimonialsRes.count || 0,
-      });
+      const statsData = await dashboardApi.getStats(client_id);
+      setStats(statsData);
     } catch (error) {
       console.error("Error fetching stats:", error);
     } finally {

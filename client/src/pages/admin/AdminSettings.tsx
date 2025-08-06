@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { articlesApi, countriesApi, universitiesApi, programsApi, consultationsApi, contactMessagesApi, testimonialsApi } from "@/lib/api";
 import { Save, Palette, Upload, Globe, Mail, Phone, MapPin, Facebook, Instagram, Twitter, Linkedin } from "lucide-react";
 import AdminLayout from "@/components/admin/AdminLayout";
 

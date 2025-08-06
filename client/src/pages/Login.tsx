@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { authApi } from "@/lib/api";
 import { useNavigate } from "react-router-dom";
 
 const Login = () => {
@@ -29,18 +29,9 @@ const Login = () => {
     setLoading(true);
 
     try {
-      const { data, error } = await supabase
-        .from("managers")
-        .select("*, clients(*)")
-        .eq("email", formData.email)
-        .eq("password", formData.password)
-        .maybeSingle();
+      const result = await authApi.login(formData.email, formData.password);
 
-      if (error) {
-        throw error;
-      }
-
-      if (!data) {
+      if (!result.manager) {
         toast({
           title: "خطأ في تسجيل الدخول",
           description: "البريد الإلكتروني أو كلمة المرور غير صحيحة",
@@ -51,14 +42,14 @@ const Login = () => {
 
       // Store manager session
       localStorage.setItem("manager_session", JSON.stringify({
-        id: data.id,
-        email: data.email,
-        client_id: data.client_id,
-        client: data.clients
+        id: result.manager.id,
+        email: result.manager.email,
+        client_id: result.manager.clientId,
+        client: result.client
       }));
 
       // Store client_id separately for easy access
-      localStorage.setItem("client_id", data.client_id || "00000000-0000-0000-0000-000000000001");
+      localStorage.setItem("client_id", result.manager.clientId || "00000000-0000-0000-0000-000000000001");
 
       toast({
         title: "تم تسجيل الدخول بنجاح",

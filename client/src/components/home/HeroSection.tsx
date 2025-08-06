@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, Phone, Star, Users, Globe, Award, CheckCircle, ArrowDown } from "lucide-react";
 import { useState, useEffect } from "react";
 import heroImage from "@/assets/harvard-university.jpg";
-import { supabase } from "@/integrations/supabase/client";
+import { articlesApi, countriesApi, universitiesApi, programsApi, consultationsApi, contactMessagesApi, testimonialsApi } from "@/lib/api";
 
 interface SiteSettings {
   site_name_ar: string;
