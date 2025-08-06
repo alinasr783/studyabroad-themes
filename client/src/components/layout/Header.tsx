@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Menu, X, Globe, GraduationCap, BookOpen, Users, Phone, Home } from "lucide-react";
 
 const Header = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const location = useLocation();
+  const [location] = useLocation();
 
   // إغلاق القائمة المتنقلة عند تغيير المسار
   useEffect(() => {
@@ -52,7 +52,7 @@ const Header = () => {
             <Link
               key={item.name}
               to={item.href}
-              className={`text-sm font-medium px-1 transition-colors ${location.pathname === item.href ? "text-primary" : "text-muted-foreground hover:text-primary"}`}
+              className={`text-sm font-medium px-1 transition-colors ${location === item.href ? "text-primary" : "text-muted-foreground hover:text-primary"}`}
             >
               {item.name}
             </Link>
@@ -94,7 +94,7 @@ const Header = () => {
               <Link
                 key={item.name}
                 to={item.href}
-                className={`flex items-center gap-3 py-3 px-2 rounded-md transition-colors ${location.pathname === item.href ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-accent"}`}
+                className={`flex items-center gap-3 py-3 px-2 rounded-md transition-colors ${location === item.href ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-accent"}`}
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 <Icon className="h-4 w-4" />
