@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 import { Lock, User, Shield } from "lucide-react";
 
 const Admin = () => {
@@ -22,31 +21,13 @@ const Admin = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
-    try {
-      // Check manager credentials
-      const { data: manager } = await supabase
-        .from('managers')
-        .select('*, clients(*)')
-        .eq('email', formData.email)
-        .eq('password', formData.password)
-        .single();
-
-      if (manager) {
-        // Store manager session with client_id
-        localStorage.setItem("manager_session", JSON.stringify({
-          id: manager.id,
-          email: manager.email,
-          client_id: manager.client_id,
-          client: manager.clients
-        }));
-        
-        // Store client_id separately for easy access
-        localStorage.setItem("client_id", manager.client_id || "00000000-0000-0000-0000-000000000001");
-        
+    // محاكاة عملية تسجيل الدخول بدون قاعدة بيانات
+    setTimeout(() => {
+      if (formData.email && formData.password) {
         setIsLoggedIn(true);
         toast({
           title: "تم تسجيل الدخول بنجاح",
@@ -55,19 +36,12 @@ const Admin = () => {
       } else {
         toast({
           title: "خطأ في تسجيل الدخول",
-          description: "البريد الإلكتروني أو كلمة المرور غير صحيحة",
+          description: "الرجاء إدخال البريد الإلكتروني وكلمة المرور",
           variant: "destructive"
         });
       }
-    } catch (error) {
-      toast({
-        title: "خطأ في تسجيل الدخول",
-        description: "حدث خطأ، يرجى المحاولة مرة أخرى",
-        variant: "destructive"
-      });
-    } finally {
       setLoading(false);
-    }
+    }, 1000);
   };
 
   const handleLogout = () => {
@@ -162,136 +136,50 @@ const Admin = () => {
 
         {/* Quick Stats */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">الدول</p>
-                  <p className="text-2xl font-bold">12</p>
+          {[
+            { title: "الدول", value: "12" },
+            { title: "الجامعات", value: "45" },
+            { title: "البرامج", value: "120" },
+            { title: "المقالات", value: "35" }
+          ].map((stat, index) => (
+            <Card key={index}>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">{stat.title}</p>
+                    <p className="text-2xl font-bold">{stat.value}</p>
+                  </div>
+                  <div className="bg-primary/10 p-3 rounded-lg">
+                    <Shield className="w-6 h-6 text-primary" />
+                  </div>
                 </div>
-                <div className="bg-primary/10 p-3 rounded-lg">
-                  <Shield className="w-6 h-6 text-primary" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">الجامعات</p>
-                  <p className="text-2xl font-bold">45</p>
-                </div>
-                <div className="bg-primary/10 p-3 rounded-lg">
-                  <Shield className="w-6 h-6 text-primary" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">البرامج</p>
-                  <p className="text-2xl font-bold">120</p>
-                </div>
-                <div className="bg-primary/10 p-3 rounded-lg">
-                  <Shield className="w-6 h-6 text-primary" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">المقالات</p>
-                  <p className="text-2xl font-bold">35</p>
-                </div>
-                <div className="bg-primary/10 p-3 rounded-lg">
-                  <Shield className="w-6 h-6 text-primary" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          ))}
         </div>
 
         {/* Management Sections */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>إدارة الدول</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground mb-4">
-                إضافة وتعديل الدول المتاحة للدراسة
-              </p>
-              <Button className="w-full">إدارة الدول</Button>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>إدارة الجامعات</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground mb-4">
-                إضافة وتعديل الجامعات المعتمدة
-              </p>
-              <Button className="w-full">إدارة الجامعات</Button>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>إدارة البرامج</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground mb-4">
-                إضافة وتعديل البرامج الأكاديمية
-              </p>
-              <Button className="w-full">إدارة البرامج</Button>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>إدارة المقالات</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground mb-4">
-                إضافة وتعديل المقالات والأدلة
-              </p>
-              <Button className="w-full">إدارة المقالات</Button>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>طلبات الاستشارة</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground mb-4">
-                مراجعة طلبات الاستشارة الواردة
-              </p>
-              <Button className="w-full">مراجعة الطلبات</Button>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>رسائل التواصل</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground mb-4">
-                مراجعة رسائل التواصل
-              </p>
-              <Button className="w-full">مراجعة الرسائل</Button>
-            </CardContent>
-          </Card>
+          {[
+            { title: "إدارة الدول", desc: "إضافة وتعديل الدول المتاحة للدراسة" },
+            { title: "إدارة الجامعات", desc: "إضافة وتعديل الجامعات المعتمدة" },
+            { title: "إدارة البرامج", desc: "إضافة وتعديل البرامج الأكاديمية" },
+            { title: "إدارة المقالات", desc: "إضافة وتعديل المقالات والأدلة" },
+            { title: "طلبات الاستشارة", desc: "مراجعة طلبات الاستشارة الواردة" },
+            { title: "رسائل التواصل", desc: "مراجعة رسائل التواصل" }
+          ].map((section, index) => (
+            <Card key={index}>
+              <CardHeader>
+                <CardTitle>{section.title}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground mb-4">
+                  {section.desc}
+                </p>
+                <Button className="w-full">{section.title}</Button>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       </div>
     </Layout>

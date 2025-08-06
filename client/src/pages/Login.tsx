@@ -4,7 +4,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 
 const Login = () => {
@@ -24,58 +23,27 @@ const Login = () => {
     }));
   };
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
-    try {
-      const { data, error } = await supabase
-        .from("managers")
-        .select("*, clients(*)")
-        .eq("email", formData.email)
-        .eq("password", formData.password)
-        .maybeSingle();
-
-      if (error) {
-        throw error;
-      }
-
-      if (!data) {
+    // محاكاة عملية تسجيل الدخول بدون الاتصال بقاعدة البيانات
+    setTimeout(() => {
+      if (formData.email && formData.password) {
+        toast({
+          title: "تم تسجيل الدخول بنجاح",
+          description: "مرحبًا بك في النظام",
+        });
+        navigate("/dashboard");
+      } else {
         toast({
           title: "خطأ في تسجيل الدخول",
-          description: "البريد الإلكتروني أو كلمة المرور غير صحيحة",
+          description: "الرجاء إدخال البريد الإلكتروني وكلمة المرور",
           variant: "destructive",
         });
-        return;
       }
-
-      // Store manager session
-      localStorage.setItem("manager_session", JSON.stringify({
-        id: data.id,
-        email: data.email,
-        client_id: data.client_id,
-        client: data.clients
-      }));
-
-      // Store client_id separately for easy access
-      localStorage.setItem("client_id", data.client_id || "00000000-0000-0000-0000-000000000001");
-
-      toast({
-        title: "تم تسجيل الدخول بنجاح",
-        description: "مرحبًا بك في لوحة التحكم",
-      });
-
-      navigate("/admin/dashboard");
-    } catch (error) {
-      console.error("Login error:", error);
-      toast({
-        title: "خطأ",
-        description: "حدث خطأ أثناء تسجيل الدخول",
-        variant: "destructive",
-      });
-    } finally {
       setLoading(false);
-    }
+    }, 1000);
   };
 
   return (
@@ -84,7 +52,7 @@ const Login = () => {
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold">تسجيل الدخول</CardTitle>
           <CardDescription>
-            ادخل إلى لوحة التحكم الخاصة بك
+            أدخل بياناتك للوصول إلى النظام
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -99,6 +67,7 @@ const Login = () => {
                 onChange={handleInputChange}
                 required
                 placeholder="أدخل بريدك الإلكتروني"
+                autoComplete="username"
               />
             </div>
             <div className="space-y-2">
@@ -111,6 +80,7 @@ const Login = () => {
                 onChange={handleInputChange}
                 required
                 placeholder="أدخل كلمة المرور"
+                autoComplete="current-password"
               />
             </div>
             <Button 

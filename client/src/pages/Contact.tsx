@@ -9,6 +9,29 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Phone, Mail, MapPin, Clock, Send } from "lucide-react";
 
+// Contact information data in JSON format
+const contactInfo = {
+  header: {
+    title: "تواصل معنا",
+    description: "نحن هنا لمساعدتك في رحلتك التعليمية. تواصل معنا للحصول على استشارة مجانية"
+  },
+  contactDetails: {
+    phone: ["+966 50 123 4567", "+966 11 234 5678"],
+    email: ["info@futuretostudy.com", "support@futuretostudy.com"],
+    address: "شارع الملك فهد، حي العليا\nالرياض 12345، المملكة العربية السعودية",
+    workingHours: "الأحد - الخميس: 9:00 ص - 6:00 م\nالجمعة: 2:00 م - 6:00 م\nالسبت: مغلق"
+  },
+  quickConsultation: {
+    title: "استشارة سريعة",
+    description: "هل تحتاج إلى استشارة فورية؟ تواصل معنا عبر واتساب للحصول على إجابات سريعة",
+    whatsappNumber: "966501234567"
+  },
+  map: {
+    placeholderText: "خريطة الموقع",
+    googleMapsLink: "https://maps.google.com/?q=شارع الملك فهد، حي العليا، الرياض"
+  }
+};
+
 const Contact = () => {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -65,10 +88,10 @@ const Contact = () => {
         {/* Header with animated gradient */}
         <div className="text-center mb-12">
           <h1 className="text-3xl md:text-4xl font-bold mb-4 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-            تواصل معنا
+            {contactInfo.header.title}
           </h1>
           <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto">
-            نحن هنا لمساعدتك في رحلتك التعليمية. تواصل معنا للحصول على استشارة مجانية
+            {contactInfo.header.description}
           </p>
         </div>
 
@@ -195,8 +218,9 @@ const Contact = () => {
                   </div>
                   <div>
                     <h3 className="font-semibold text-sm md:text-base mb-1">الهاتف</h3>
-                    <p className="text-muted-foreground text-sm md:text-base">+966 50 123 4567</p>
-                    <p className="text-muted-foreground text-sm md:text-base">+966 11 234 5678</p>
+                    {contactInfo.contactDetails.phone.map((phone, index) => (
+                      <p key={index} className="text-muted-foreground text-sm md:text-base">{phone}</p>
+                    ))}
                   </div>
                 </div>
 
@@ -206,8 +230,9 @@ const Contact = () => {
                   </div>
                   <div>
                     <h3 className="font-semibold text-sm md:text-base mb-1">البريد الإلكتروني</h3>
-                    <p className="text-muted-foreground text-sm md:text-base">info@futuretostudy.com</p>
-                    <p className="text-muted-foreground text-sm md:text-base">support@futuretostudy.com</p>
+                    {contactInfo.contactDetails.email.map((email, index) => (
+                      <p key={index} className="text-muted-foreground text-sm md:text-base">{email}</p>
+                    ))}
                   </div>
                 </div>
 
@@ -217,9 +242,8 @@ const Contact = () => {
                   </div>
                   <div>
                     <h3 className="font-semibold text-sm md:text-base mb-1">العنوان</h3>
-                    <p className="text-muted-foreground text-sm md:text-base">
-                      شارع الملك فهد، حي العليا<br />
-                      الرياض 12345، المملكة العربية السعودية
+                    <p className="text-muted-foreground text-sm md:text-base whitespace-pre-line">
+                      {contactInfo.contactDetails.address}
                     </p>
                   </div>
                 </div>
@@ -230,10 +254,8 @@ const Contact = () => {
                   </div>
                   <div>
                     <h3 className="font-semibold text-sm md:text-base mb-1">ساعات العمل</h3>
-                    <p className="text-muted-foreground text-sm md:text-base">
-                      الأحد - الخميس: 9:00 ص - 6:00 م<br />
-                      الجمعة: 2:00 م - 6:00 م<br />
-                      السبت: مغلق
+                    <p className="text-muted-foreground text-sm md:text-base whitespace-pre-line">
+                      {contactInfo.contactDetails.workingHours}
                     </p>
                   </div>
                 </div>
@@ -243,9 +265,9 @@ const Contact = () => {
             {/* Quick Consultation */}
             <Card className="bg-gradient-to-br from-primary to-secondary text-white shadow-lg hover:shadow-xl transition-shadow duration-300">
               <CardContent className="p-4 md:p-6">
-                <h3 className="text-lg md:text-xl font-bold mb-2 md:mb-3">استشارة سريعة</h3>
+                <h3 className="text-lg md:text-xl font-bold mb-2 md:mb-3">{contactInfo.quickConsultation.title}</h3>
                 <p className="mb-3 md:mb-4 opacity-90 text-sm md:text-base">
-                  هل تحتاج إلى استشارة فورية؟ تواصل معنا عبر واتساب للحصول على إجابات سريعة
+                  {contactInfo.quickConsultation.description}
                 </p>
                 <Button 
                   variant="secondary" 
@@ -253,7 +275,7 @@ const Contact = () => {
                   asChild
                 >
                   <a 
-                    href="https://wa.me/966501234567" 
+                    href={`https://wa.me/${contactInfo.quickConsultation.whatsappNumber}`} 
                     target="_blank" 
                     rel="noopener noreferrer"
                     className="flex items-center justify-center gap-2"
@@ -273,14 +295,14 @@ const Contact = () => {
                 <div className="w-full h-48 md:h-64 bg-gray-100 relative flex items-center justify-center">
                   <div className="text-center z-10 bg-white/90 backdrop-blur-sm p-4 rounded-lg shadow-sm">
                     <MapPin className="w-10 h-10 text-primary mx-auto mb-2" />
-                    <p className="text-gray-700 font-medium">خريطة الموقع</p>
+                    <p className="text-gray-700 font-medium">{contactInfo.map.placeholderText}</p>
                     <Button 
                       variant="link" 
                       className="text-primary mt-2 text-sm"
                       asChild
                     >
                       <a 
-                        href="https://maps.google.com/?q=شارع الملك فهد، حي العليا، الرياض"
+                        href={contactInfo.map.googleMapsLink}
                         target="_blank"
                         rel="noopener noreferrer"
                       >

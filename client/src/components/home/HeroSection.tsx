@@ -12,6 +12,41 @@ interface SiteSettings {
   primary_color_3: string;
 }
 
+// البيانات المنفصلة في كائن JSON
+const heroData = {
+  title: {
+    main: "الدراسة بالخارج",
+    highlight: "حقق حلمك في",
+    gradient: "from-yellow-400 via-orange-400 to-red-400"
+  },
+  description: "نساعدك في الوصول لأفضل الجامعات العالمية مع خدمة استشارية متكاملة",
+  buttons: [
+    {
+      text: "ابدأ رحلتك الآن",
+      icon: ArrowLeft,
+      variant: "gradient",
+      gradient: "from-orange-500 to-red-500",
+      hoverGradient: "from-orange-600 to-red-600"
+    },
+    {
+      text: "تواصل معنا",
+      icon: Phone,
+      variant: "outline",
+      className: "border-2 border-white text-white hover:bg-white hover:text-primary backdrop-blur-sm"
+    }
+  ],
+  trustIndicators: [
+    { text: "5000+ طالب", icon: Users },
+    { text: "15 عام خبرة", icon: Award }
+  ],
+  stats: [
+    { icon: Globe, number: "50+", label: "دولة حول العالم", color: "from-blue-400 to-cyan-400" },
+    { icon: Award, number: "500+", label: "جامعة مرموقة", color: "from-purple-400 to-pink-400" },
+    { icon: Users, number: "5000+", label: "طالب سعيد", color: "from-green-400 to-emerald-400" },
+    { icon: CheckCircle, number: "15+", label: "عام من الخبرة", color: "from-orange-400 to-red-400" }
+  ]
+};
+
 const HeroSection = () => {
   const [siteSettings, setSiteSettings] = useState<SiteSettings | null>(null);
 
@@ -65,58 +100,55 @@ const HeroSection = () => {
             <div className="text-white space-y-6 md:space-y-8 w-full lg:w-1/2 text-right">
               <div className="space-y-4 md:space-y-6">
                 <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold leading-tight">
-                  <span className="block bg-gradient-to-r from-yellow-400 via-orange-400 to-red-400 bg-clip-text text-transparent">
-                    الدراسة بالخارج
+                  <span className={`block bg-gradient-to-r ${heroData.title.gradient} bg-clip-text text-transparent`}>
+                    {heroData.title.main}
                   </span>
-                  حقق حلمك في
+                  {heroData.title.highlight}
                 </h1>
 
                 <p className="text-base md:text-lg lg:text-xl text-white/90 leading-relaxed max-w-xl">
-                  نساعدك في الوصول لأفضل الجامعات العالمية مع خدمة استشارية متكاملة
+                  {heroData.description}
                 </p>
               </div>
 
               {/* أزرار الحث على الإجراء */}
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-2 md:pt-4 justify-end">
-                <Button 
-                  size="lg" 
-                  className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 text-base md:text-lg px-6 py-5 md:px-8 md:py-6 font-bold border-0"
-                >
-                  <ArrowLeft className="ml-2 h-5 w-5 md:h-6 md:w-6" />
-                  ابدأ رحلتك الآن
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="lg"
-                  className="border-2 border-white text-white hover:bg-white hover:text-primary backdrop-blur-sm transform hover:scale-[1.02] transition-all duration-200 text-base md:text-lg px-6 py-5 md:px-8 md:py-6 font-bold bg-white/10"
-                >
-                  <Phone className="mr-2 h-5 w-5 md:h-6 md:w-6" />
-                  تواصل معنا
-                </Button>
+                {heroData.buttons.map((button, index) => {
+                  const Icon = button.icon;
+                  return (
+                    <Button
+                      key={index}
+                      size="lg"
+                      className={`${button.variant === 'gradient' 
+                        ? `bg-gradient-to-r ${button.gradient} hover:${button.hoverGradient} text-white shadow-lg hover:shadow-xl`
+                        : button.className
+                      } transform hover:scale-[1.02] transition-all duration-200 text-base md:text-lg px-6 py-5 md:px-8 md:py-6 font-bold border-0`}
+                    >
+                      <Icon className="ml-2 h-5 w-5 md:h-6 md:w-6" />
+                      {button.text}
+                    </Button>
+                  );
+                })}
               </div>
 
               {/* مؤشرات الثقة */}
               <div className="flex flex-wrap items-center gap-3 md:gap-4 pt-4 md:pt-6 border-t border-white/20 text-sm md:text-base justify-end">
-                <span className="flex items-center gap-1">
-                  <span>5000+ طالب</span>
-                  <Users className="w-4 h-4" />
-                </span>
-                <span className="flex items-center gap-1">
-                  <span>15 عام خبرة</span>
-                  <Award className="w-4 h-4" />
-                </span>
+                {heroData.trustIndicators.map((indicator, index) => {
+                  const Icon = indicator.icon;
+                  return (
+                    <span key={index} className="flex items-center gap-1">
+                      <span>{indicator.text}</span>
+                      <Icon className="w-4 h-4" />
+                    </span>
+                  );
+                })}
               </div>
             </div>
 
             {/* إحصائيات - الجانب الأيسر */}
             <div className="w-full lg:w-1/2 mt-8 lg:mt-0">
               <div className="grid grid-cols-2 gap-4 md:gap-6">
-                {[
-                  { icon: Globe, number: "50+", label: "دولة حول العالم", color: "from-blue-400 to-cyan-400" },
-                  { icon: Award, number: "500+", label: "جامعة مرموقة", color: "from-purple-400 to-pink-400" },
-                  { icon: Users, number: "5000+", label: "طالب سعيد", color: "from-green-400 to-emerald-400" },
-                  { icon: CheckCircle, number: "15+", label: "عام من الخبرة", color: "from-orange-400 to-red-400" }
-                ].map((stat, index) => {
+                {heroData.stats.map((stat, index) => {
                   const Icon = stat.icon;
                   return (
                     <div 
@@ -136,14 +168,6 @@ const HeroSection = () => {
           </div>
         </div>
       </div>
-
-      {/* مؤشر التمرير */}
-      {/* <div className="absolute bottom-6 md:bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce cursor-pointer">
-        <div className="flex flex-col items-center">
-          <ArrowUp className="w-5 h-5 text-white/70 hover:text-white transition-colors" />
-          <p className="text-white/70 text-xs mt-1 hover:text-white transition-colors">اكتشف المزيد</p>
-        </div>
-      </div> */}
     </section>
   );
 };
