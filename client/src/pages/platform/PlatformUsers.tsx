@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { useLocation } from "wouter";
+import { useNavigate } from "react-router-dom";
 import { 
   ArrowLeft, 
   Search, 
@@ -36,18 +36,18 @@ const PlatformUsers = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const { toast } = useToast();
-  const [, setLocation] = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Check if user is platform owner
     const session = localStorage.getItem("platform_owner_session");
     if (!session) {
-      setLocation("/platform/login");
+      navigate("/platform/login");
       return;
     }
 
     fetchManagers();
-  }, [setLocation]);
+  }, [navigate]);
 
   const fetchManagers = async () => {
     try {

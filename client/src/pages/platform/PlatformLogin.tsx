@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { useLocation } from "wouter";
+import { useNavigate } from "react-router-dom";
 import { Shield, Crown } from "lucide-react";
 
 const PlatformLogin = () => {
@@ -15,7 +15,7 @@ const PlatformLogin = () => {
   });
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
-  const [, setLocation] = useLocation();
+  const navigate = useNavigate();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -64,7 +64,7 @@ const PlatformLogin = () => {
         description: "تم تسجيل الدخول بنجاح",
       });
 
-      setLocation("/platform/dashboard");
+      navigate("/platform/dashboard");
     } catch (error) {
       console.error("Login error:", error);
       toast({

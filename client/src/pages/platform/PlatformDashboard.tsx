@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { useLocation } from "wouter";
+import { useNavigate } from "react-router-dom";
 import { 
   Crown, 
   Globe, 
@@ -60,18 +60,18 @@ const PlatformDashboard = () => {
   });
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
-  const [, setLocation] = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Check if user is platform owner
     const session = localStorage.getItem("platform_owner_session");
     if (!session) {
-      setLocation("/platform/login");
+      navigate("/platform/login");
       return;
     }
 
     fetchData();
-  }, [setLocation]);
+  }, [navigate]);
 
   const fetchData = async () => {
     try {

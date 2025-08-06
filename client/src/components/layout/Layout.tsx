@@ -1,5 +1,5 @@
 import { ReactNode, useEffect } from "react";
-import { useLocation } from "wouter";
+import { useLocation } from "react-router-dom";
 import Header from "./Header";
 import Footer from "./Footer";
 
@@ -8,11 +8,11 @@ interface LayoutProps {
 }
 
 const Layout = ({ children }: LayoutProps) => {
-  const [location] = useLocation();
+  const location = useLocation();
 
   useEffect(() => {
     window.scrollTo(0, 0);
-  }, [location]);
+  }, [location.pathname]);
 
   return (
     <div className="min-h-screen flex flex-col font-cairo">

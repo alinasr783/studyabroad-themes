@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { useLocation } from "wouter";
+import { useNavigate } from "react-router-dom";
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -14,7 +14,7 @@ const Login = () => {
   });
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
-  const [, setLocation] = useLocation();
+  const navigate = useNavigate();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -65,7 +65,7 @@ const Login = () => {
         description: "مرحبًا بك في لوحة التحكم",
       });
 
-      setLocation("/admin/dashboard");
+      navigate("/admin/dashboard");
     } catch (error) {
       console.error("Login error:", error);
       toast({

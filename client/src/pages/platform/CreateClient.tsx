@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { useLocation } from "wouter";
+import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Globe, Palette, User, Mail, Lock, Building } from "lucide-react";
 
 const CreateClient = () => {
@@ -26,7 +26,7 @@ const CreateClient = () => {
   });
   
   const { toast } = useToast();
-  const [, setLocation] = useLocation();
+  const navigate = useNavigate();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
