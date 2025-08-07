@@ -1,10 +1,7 @@
 import Layout from "@/components/layout/Layout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Phone, Mail, MapPin, Clock, Globe } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { useEffect, useState } from "react";
-import Head from "next/head";
+import { ArrowLeft } from "lucide-react";
 
 // البيانات الافتراضية في حالة عدم توفر بيانات من قاعدة البيانات
 const defaultAboutData = {
@@ -96,63 +93,10 @@ const defaultAboutData = {
 };
 
 const About = () => {
-  const [aboutData, setAboutData] = useState(defaultAboutData);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    const fetchAboutData = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('site_sections')
-          .select('content')
-          .eq('section_key', 'about_page')
-          .single();
-
-        if (error) throw error;
-
-        if (data && data.content) {
-          setAboutData(data.content);
-        }
-      } catch (err) {
-        console.error('Error fetching about data:', err);
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchAboutData();
-  }, []);
-
-  if (loading) {
-    return (
-      <Layout>
-        <div className="flex justify-center items-center h-screen">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-        </div>
-      </Layout>
-    );
-  }
-
-  if (error) {
-    return (
-      <Layout>
-        <div className="text-center py-10">
-          <div className="text-red-500 mb-4">حدث خطأ في جلب البيانات: {error}</div>
-          <p>جاري عرض البيانات الافتراضية</p>
-        </div>
-      </Layout>
-    );
-  }
+  const aboutData = defaultAboutData;
 
   return (
     <Layout>
-      <Head>
-        <title>من نحن - فيوتشر إنترناشونال جروب</title>
-        <meta name="description" content="تعرف على وكالة فيوتشر إنترناشونال جروب للاستشارات التعليمية وخدماتنا المميزة لمساعدة الطلاب في الالتحاق بأفضل الجامعات العالمية" />
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
-      </Head>
 
       {/* Hero Section */}
       <section className="py-12 md:py-20 bg-gradient-to-br from-blue-600 to-blue-700 text-white relative overflow-hidden text-right px-4">
