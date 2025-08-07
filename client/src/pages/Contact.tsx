@@ -12,7 +12,7 @@ import { Phone, Mail, MapPin, Clock, Send } from "lucide-react";
 // Contact information data in JSON format
 const contactInfo = {
   header: {
-    title: "تواصل معنا",
+    title: "نحن في انتظارك",
     description: "نحن هنا لمساعدتك في رحلتك التعليمية. تواصل معنا للحصول على استشارة مجانية"
   },
   contactDetails: {
@@ -43,6 +43,12 @@ const Contact = () => {
   });
   const { toast } = useToast();
 
+  const validateEmail = (email: string) => {
+    return String(email)
+      .toLowerCase()
+      .match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/);
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -50,12 +56,39 @@ const Contact = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // التحقق من الصحة الأساسي
+    if (!formData.full_name || !formData.email || !formData.subject || !formData.message) {
+      toast({
+        title: "خطأ في الإرسال",
+        description: "الرجاء ملء جميع الحقول المطلوبة",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // التحقق من صحة البريد الإلكتروني
+    if (!validateEmail(formData.email)) {
+      toast({
+        title: "بريد إلكتروني غير صالح",
+        description: "الرجاء إدخال بريد إلكتروني صحيح",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
       const { error } = await supabase
         .from('contact_messages')
-        .insert([formData]);
+        .insert([{
+          full_name: formData.full_name,
+          email: formData.email,
+          phone: formData.phone,
+          subject: formData.subject,
+          message: formData.message
+        }]);
 
       if (error) throw error;
 
@@ -64,6 +97,7 @@ const Contact = () => {
         description: "سنتواصل معك في أقرب وقت ممكن",
       });
 
+      // إعادة تعيين النموذج
       setFormData({
         full_name: "",
         email: "",
@@ -71,7 +105,9 @@ const Contact = () => {
         subject: "",
         message: ""
       });
+
     } catch (error) {
+      console.error('Error submitting form:', error);
       toast({
         title: "خطأ في إرسال الرسالة",
         description: "حدث خطأ، يرجى المحاولة مرة أخرى",
@@ -102,7 +138,7 @@ const Contact = () => {
               <CardHeader>
                 <CardTitle className="text-xl md:text-2xl flex items-center gap-2">
                   <Send className="w-5 h-5 text-primary" />
-                  أرسل لنا رسالة
+                  أرسل لنا استشارتك
                 </CardTitle>
               </CardHeader>
               <CardContent>

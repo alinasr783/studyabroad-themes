@@ -386,7 +386,7 @@ const CountryDetail = () => {
                     <div className="bg-orange-50 p-4 rounded-lg">
                       <p className="text-sm text-gray-700">{country.visa_requirements_ar}</p>
                     </div>
-                    <Button className="w-full mt-4 bg-orange-500 hover:bg-orange-600">
+                    <Button className="w-full mt-4 bg-orange-500 hover:bg-orange-600" onClick={()=>navigate("/contact")}>
                       استشارة تأشيرة مجانية
                     </Button>
                   </CardContent>

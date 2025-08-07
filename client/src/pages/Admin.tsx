@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Lock, User, Shield } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const Admin = () => {
   const [loading, setLoading] = useState(false);
@@ -15,33 +17,45 @@ const Admin = () => {
     password: ""
   });
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
-    // محاكاة عملية تسجيل الدخول بدون قاعدة بيانات
-    setTimeout(() => {
-      if (formData.email && formData.password) {
-        setIsLoggedIn(true);
-        toast({
-          title: "تم تسجيل الدخول بنجاح",
-          description: "مرحباً بك في لوحة التحكم",
-        });
-      } else {
-        toast({
-          title: "خطأ في تسجيل الدخول",
-          description: "الرجاء إدخال البريد الإلكتروني وكلمة المرور",
-          variant: "destructive"
-        });
+    try {
+      // جلب بيانات المشرف من Supabase
+      const { data, error } = await supabase
+        .from('admins')
+        .select('*')
+        .eq('email', formData.email)
+        .eq('password', formData.password)
+        .single();
+
+      if (error || !data) {
+        throw new Error('بيانات الدخول غير صحيحة');
       }
+
+      setIsLoggedIn(true);
+      toast({
+        title: "تم تسجيل الدخول بنجاح",
+        description: "مرحباً بك في لوحة التحكم",
+      });
+      navigate("/dashboard"); // توجيه إلى صفحة الداشبورد
+    } catch (err) {
+      toast({
+        title: "خطأ في تسجيل الدخول",
+        description: "البريد الإلكتروني أو كلمة المرور غير صحيحة",
+        variant: "destructive"
+      });
+    } finally {
       setLoading(false);
-    }, 1000);
+    }
   };
 
   const handleLogout = () => {
@@ -51,6 +65,7 @@ const Admin = () => {
       title: "تم تسجيل الخروج",
       description: "تم تسجيل خروجك بنجاح",
     });
+    navigate("/admin"); // العودة إلى صفحة تسجيل الدخول
   };
 
   if (!isLoggedIn) {
@@ -161,12 +176,12 @@ const Admin = () => {
         {/* Management Sections */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[
-            { title: "إدارة الدول", desc: "إضافة وتعديل الدول المتاحة للدراسة" },
-            { title: "إدارة الجامعات", desc: "إضافة وتعديل الجامعات المعتمدة" },
-            { title: "إدارة البرامج", desc: "إضافة وتعديل البرامج الأكاديمية" },
-            { title: "إدارة المقالات", desc: "إضافة وتعديل المقالات والأدلة" },
-            { title: "طلبات الاستشارة", desc: "مراجعة طلبات الاستشارة الواردة" },
-            { title: "رسائل التواصل", desc: "مراجعة رسائل التواصل" }
+            { title: "إدارة الدول", desc: "إضافة وتعديل الدول المتاحة للدراسة", path: "/dashboard/countries" },
+            { title: "إدارة الجامعات", desc: "إضافة وتعديل الجامعات المعتمدة", path: "/dashboard/universities" },
+            { title: "إدارة البرامج", desc: "إضافة وتعديل البرامج الأكاديمية", path: "/dashboard/programs" },
+            { title: "إدارة المقالات", desc: "إضافة وتعديل المقالات والأدلة", path: "/dashboard/articles" },
+            { title: "طلبات الاستشارة", desc: "مراجعة طلبات الاستشارة الواردة", path: "/dashboard/consultations" },
+            { title: "رسائل التواصل", desc: "مراجعة رسائل التواصل", path: "/dashboard/contacts" }
           ].map((section, index) => (
             <Card key={index}>
               <CardHeader>
@@ -176,7 +191,9 @@ const Admin = () => {
                 <p className="text-muted-foreground mb-4">
                   {section.desc}
                 </p>
-                <Button className="w-full">{section.title}</Button>
+                <Button className="w-full" onClick={() => navigate(section.path)}>
+                  {section.title}
+                </Button>
               </CardContent>
             </Card>
           ))}

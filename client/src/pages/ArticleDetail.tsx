@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { Calendar, Clock, Eye, User, Share2 } from "lucide-react";
+import DOMPurify from "dompurify";
 
 interface Article {
   id: string;
@@ -31,60 +32,58 @@ const ArticleDetail = () => {
   const { slug } = useParams();
   const [article, setArticle] = useState<Article | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const dummyArticles: Article[] = [
-    {
-      id: "1",
-      title_ar: "دليل شامل للدراسة في ألمانيا",
-      title_en: "Complete Guide to Study in Germany",
-      slug: "study-in-germany",
-      content_ar: "ألمانيا من أفضل الوجهات للطلاب الدوليين بسبب جودة التعليم العالي وتكلفة المعيشة المعقولة...",
-      content_en: "Germany is one of the top destinations for international students...",
-      excerpt_ar: "كل ما تحتاج معرفته عن الدراسة في ألمانيا",
-      excerpt_en: "Everything about studying in Germany",
-      author_name: "أحمد محمد",
-      author_avatar: "https://randomuser.me/api/portraits/men/32.jpg",
-      featured_image: "https://images.unsplash.com/photo-1566438480900-0609be27a4be?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80",
-      category: "الدراسة في الخارج",
-      tags: ["ألمانيا", "منح دراسية"],
-      is_published: true,
-      is_featured: true,
-      views_count: 1245,
-      reading_time: 8,
-      created_at: "2023-05-15T10:00:00Z"
-    },
-    {
-      id: "2",
-      title_ar: "كيف تحصل على منحة دراسية ممولة بالكامل",
-      title_en: "How to Get a Fully Funded Scholarship",
-      slug: "fully-funded-scholarship",
-      content_ar: "الحصول على منحة دراسية ممولة بالكامل حلم للعديد من الطلاب...",
-      content_en: "Getting a fully funded scholarship is a dream for many students...",
-      excerpt_ar: "استراتيجيات للحصول على منحة دراسية كاملة",
-      excerpt_en: "Strategies to get a full scholarship",
-      author_name: "سارة عبد الله",
-      author_avatar: "https://randomuser.me/api/portraits/women/44.jpg",
-      featured_image: "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80",
-      category: "المنح الدراسية",
-      tags: ["منح", "تمويل"],
-      is_published: true,
-      is_featured: false,
-      views_count: 987,
-      reading_time: 6,
-      created_at: "2023-06-20T14:30:00Z"
-    }
-  ];
+  // دالة لتنظيف وعرض HTML بأمان
+  const createMarkup = (htmlContent: string) => {
+    return {
+      __html: DOMPurify.sanitize(htmlContent, {
+        ALLOWED_TAGS: ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'ul', 'ol', 'li', 
+                      'strong', 'em', 'a', 'br', 'div', 'span', 'img'],
+        ALLOWED_ATTR: ['href', 'target', 'rel', 'src', 'alt', 'class']
+      })
+    };
+  };
 
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      // استخدام البيانات الوهمية مؤقتاً
-      const selectedArticle = dummyArticles.find(art => art.slug === slug) || null;
-      setArticle(selectedArticle);
-      setLoading(false);
+    const fetchArticle = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const { data, error: supabaseError } = await supabase
+          .from('articles')
+          .select('*')
+          .eq('slug', slug)
+          .eq('is_published', true)
+          .single();
+
+        if (supabaseError) {
+          throw supabaseError;
+        }
+
+        if (!data) {
+          throw new Error('المقال غير موجود');
+        }
+
+        // زيادة عدد المشاهدات
+        await supabase
+          .from('articles')
+          .update({ views_count: (data.views_count || 0) + 1 })
+          .eq('id', data.id);
+
+        setArticle(data);
+      } catch (err) {
+        console.error('Error fetching article:', err);
+        setError(err instanceof Error ? err.message : 'حدث خطأ أثناء جلب المقال');
+      } finally {
+        setLoading(false);
+      }
     };
 
-    fetchData();
+    if (slug) {
+      fetchArticle();
+    }
   }, [slug]);
 
   if (loading) {
@@ -97,12 +96,12 @@ const ArticleDetail = () => {
     );
   }
 
-  if (!article) {
+  if (error || !article) {
     return (
       <Layout>
         <div className="container mx-auto px-4 py-8 text-center" dir="rtl">
           <h1 className="text-3xl font-bold mb-4">المقال غير موجود</h1>
-          <p className="text-xl text-muted-foreground mb-6">لم يتم العثور على المقال المطلوب</p>
+          <p className="text-xl text-muted-foreground mb-6">{error || 'لم يتم العثور على المقال المطلوب'}</p>
           <Button asChild>
             <Link to="/articles">العودة إلى قائمة المقالات</Link>
           </Button>
@@ -191,10 +190,8 @@ const ArticleDetail = () => {
           <div className="prose prose-lg max-w-none mb-8" dir="rtl">
             <div 
               className="leading-relaxed text-right"
-              style={{ whiteSpace: 'pre-line' }}
-            >
-              {article.content_ar}
-            </div>
+              dangerouslySetInnerHTML={createMarkup(article.content_ar)}
+            />
           </div>
 
           {/* Article Tags */}
@@ -220,7 +217,7 @@ const ArticleDetail = () => {
                   if (navigator.share) {
                     navigator.share({
                       title: article.title_ar,
-                      text: article.excerpt_ar,
+                      text: article.excerpt_ar || article.title_ar,
                       url: window.location.href,
                     });
                   } else {
