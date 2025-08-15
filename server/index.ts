@@ -1,70 +1,65 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { VercelRequest, VercelResponse } from '@vercel/node';
 
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+// Middleware for logging
 app.use((req, res, next) => {
   const start = Date.now();
-  const path = req.path;
-  let capturedJsonResponse: Record<string, any> | undefined = undefined;
+  const originalJson = res.json;
 
-  const originalResJson = res.json;
-  res.json = function (bodyJson, ...args) {
-    capturedJsonResponse = bodyJson;
-    return originalResJson.apply(res, [bodyJson, ...args]);
+  res.json = function(body) {
+    res.locals.responseBody = body;
+    return originalJson.call(this, body);
   };
 
-  res.on("finish", () => {
+  res.on('finish', () => {
     const duration = Date.now() - start;
-    if (path.startsWith("/api")) {
-      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
-      }
-
-      if (logLine.length > 80) {
-        logLine = logLine.slice(0, 79) + "…";
-      }
-
-      log(logLine);
-    }
+    log(`${req.method} ${req.path} ${res.statusCode} - ${duration}ms`);
   });
 
   next();
 });
 
-(async () => {
-  const server = await registerRoutes(app);
+// Health check endpoint
+app.get('/health', (_, res) => res.status(200).json({ status: 'OK' }));
 
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-    const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
+// Vercel serverless handler
+export default async (req: VercelRequest, res: VercelResponse) => {
+  try {
+    const appWithRoutes = await registerRoutes(app);
 
-    res.status(status).json({ message });
-    throw err;
-  });
+    if (process.env.NODE_ENV === 'development') {
+      await setupVite(appWithRoutes);
+    } else {
+      serveStatic(appWithRoutes);
+    }
 
-  // importantly only setup vite in development and after
-  // setting up all the other routes so the catch-all route
-  // doesn't interfere with the other routes
-  if (app.get("env") === "development") {
-    await setupVite(app, server);
-  } else {
-    serveStatic(app);
+    return appWithRoutes(req, res);
+  } catch (error) {
+    console.error('Server error:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
+};
 
-  // ALWAYS serve the app on port 5000
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
-  const port = 5000;
-  server.listen({
-    port,
-    host: "0.0.0.0",
-    reusePort: true,
-  }, () => {
-    log(`serving on port ${port}`);
-  });
-})();
+// Local development server
+if (process.env.NODE_ENV !== 'production') {
+  (async () => {
+    const appWithRoutes = await registerRoutes(app);
+    const port = process.env.PORT || 5000;
+
+    if (process.env.NODE_ENV === 'development') {
+      await setupVite(appWithRoutes);
+    } else {
+      serveStatic(appWithRoutes);
+    }
+
+    appWithRoutes.listen(port, () => {
+      log(`Server running on http://localhost:${port}`);
+    });
+  })();
+}
