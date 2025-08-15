@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { Calendar, Clock, Eye, User, BookOpen } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 
 interface Article {
   id: string;
@@ -28,13 +29,81 @@ interface Article {
   created_at: string;
 }
 
+interface SiteSettings {
+  primary_color_1?: string;
+  primary_color_2?: string;
+  primary_color_3?: string;
+}
+
 const ArticlesList = () => {
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [clientId, setClientId] = useState<string | null>(null);
+
+  // جلب معرف العميل أولاً
+  useEffect(() => {
+    const fetchClientId = async () => {
+      try {
+        const domain = window.location.hostname;
+        const { data: clientData, error: clientError } = await supabase
+          .from("clients")
+          .select("id")
+          .eq("domain", domain)
+          .maybeSingle();
+
+        if (clientError) throw clientError;
+        if (!clientData) throw new Error("لم يتم العثور على عميل لهذا الدومين");
+
+        setClientId(clientData.id);
+      } catch (err) {
+        console.error("Error fetching client ID:", err);
+        setError("حدث خطأ أثناء تحميل البيانات. يرجى المحاولة لاحقاً.");
+        setLoading(false);
+      }
+    };
+
+    fetchClientId();
+  }, []);
+
+  // جلب إعدادات الموقع من Supabase بناءً على clientId
+  const { data: siteSettings } = useQuery<SiteSettings>({
+    queryKey: ['siteSettings', clientId],
+    queryFn: async () => {
+      if (!clientId) return null;
+
+      const { data, error } = await supabase
+        .from('site_settings')
+        .select('primary_color_1, primary_color_2, primary_color_3')
+        .eq('client_id', clientId)
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!clientId
+  });
+
+  // تطبيق ألوان الموقع الديناميكية
+  useEffect(() => {
+    if (siteSettings) {
+      const root = document.documentElement;
+      if (siteSettings.primary_color_1) {
+        root.style.setProperty('--primary', siteSettings.primary_color_1);
+      }
+      if (siteSettings.primary_color_2) {
+        root.style.setProperty('--primary-2', siteSettings.primary_color_2);
+      }
+      if (siteSettings.primary_color_3) {
+        root.style.setProperty('--primary-3', siteSettings.primary_color_3);
+      }
+    }
+  }, [siteSettings]);
 
   useEffect(() => {
     const fetchArticles = async () => {
+      if (!clientId) return;
+
       try {
         setLoading(true);
         setError(null);
@@ -43,6 +112,7 @@ const ArticlesList = () => {
           .from('articles')
           .select('*')
           .eq('is_published', true)
+          .eq('client_id', clientId)
           .order('created_at', { ascending: false });
 
         if (supabaseError) {
@@ -59,13 +129,18 @@ const ArticlesList = () => {
     };
 
     fetchArticles();
-  }, []);
+  }, [clientId]);
 
   if (loading) {
     return (
       <Layout>
         <div className="min-h-screen flex items-center justify-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+          <div 
+            className="animate-spin rounded-full h-32 w-32 border-b-2"
+            style={{
+              borderColor: siteSettings?.primary_color_1 || '#3b82f6'
+            }}
+          ></div>
         </div>
       </Layout>
     );
@@ -75,11 +150,24 @@ const ArticlesList = () => {
     return (
       <Layout>
         <div className="container mx-auto px-4 py-8 text-center">
-          <div className="bg-destructive/10 text-destructive p-4 rounded-lg max-w-md mx-auto">
+          <div 
+            className="p-4 rounded-lg max-w-md mx-auto"
+            style={{
+              backgroundColor: siteSettings?.primary_color_1 ? `${siteSettings.primary_color_1}10` : 'rgba(59, 130, 246, 0.1)',
+              borderColor: siteSettings?.primary_color_1 ? `${siteSettings.primary_color_1}30` : 'rgba(59, 130, 246, 0.2)',
+              color: siteSettings?.primary_color_1 || '#3b82f6'
+            }}
+          >
             <p>{error}</p>
             <Button 
               onClick={() => window.location.reload()} 
               className="mt-4"
+              style={{
+                backgroundColor: siteSettings?.primary_color_1 || '#3b82f6',
+                '&:hover': {
+                  backgroundColor: siteSettings?.primary_color_2 || '#6366f1'
+                }
+              }}
             >
               إعادة المحاولة
             </Button>
@@ -101,7 +189,13 @@ const ArticlesList = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {articles.map((article) => (
-            <Card key={article.id} className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+            <Card 
+              key={article.id} 
+              className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
+              style={{
+                borderColor: siteSettings?.primary_color_1 ? `${siteSettings.primary_color_1}20` : 'rgba(59, 130, 246, 0.1)'
+              }}
+            >
               <div className="relative overflow-hidden rounded-t-lg">
                 {article.featured_image ? (
                   <img 
@@ -113,17 +207,38 @@ const ArticlesList = () => {
                     }}
                   />
                 ) : (
-                  <div className="w-full h-48 bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
-                    <BookOpen className="w-16 h-16 text-white" />
+                  <div 
+                    className="w-full h-48 flex items-center justify-center"
+                    style={{
+                      background: `linear-gradient(to right, ${siteSettings?.primary_color_1 || '#3b82f6'}, ${siteSettings?.primary_color_2 || '#6366f1'})`
+                    }}
+                  >
+                    <BookOpen 
+                      className="w-16 h-16 text-white" 
+                    />
                   </div>
                 )}
                 {article.is_featured && (
-                  <Badge className="absolute top-3 left-3 bg-accent text-accent-foreground">
+                  <Badge 
+                    className="absolute top-3 left-3"
+                    style={{
+                      backgroundColor: siteSettings?.primary_color_1 || '#3b82f6',
+                      color: 'white'
+                    }}
+                  >
                     مميز
                   </Badge>
                 )}
                 {article.category && (
-                  <Badge variant="secondary" className="absolute bottom-3 left-3">
+                  <Badge 
+                    variant="secondary" 
+                    className="absolute bottom-3 left-3"
+                    style={{
+                      backgroundColor: siteSettings?.primary_color_1 ? `${siteSettings.primary_color_1}10` : 'rgba(59, 130, 246, 0.1)',
+                      color: siteSettings?.primary_color_1 || '#3b82f6',
+                      borderColor: siteSettings?.primary_color_1 ? `${siteSettings.primary_color_1}30` : 'rgba(59, 130, 246, 0.2)'
+                    }}
+                  >
                     {article.category}
                   </Badge>
                 )}
@@ -136,12 +251,22 @@ const ArticlesList = () => {
                 <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
                   {article.author_name && (
                     <div className="flex items-center gap-1">
-                      <User className="w-4 h-4" />
+                      <User 
+                        className="w-4 h-4"
+                        style={{
+                          color: siteSettings?.primary_color_1 || '#3b82f6'
+                        }}
+                      />
                       <span>{article.author_name}</span>
                     </div>
                   )}
                   <div className="flex items-center gap-1">
-                    <Calendar className="w-4 h-4" />
+                    <Calendar 
+                      className="w-4 h-4"
+                      style={{
+                        color: siteSettings?.primary_color_1 || '#3b82f6'
+                      }}
+                    />
                     <span>{new Date(article.created_at).toLocaleDateString('ar-SA')}</span>
                   </div>
                 </div>
@@ -156,20 +281,39 @@ const ArticlesList = () => {
                   <div className="flex items-center gap-4 text-sm text-muted-foreground">
                     {article.reading_time && (
                       <div className="flex items-center gap-1">
-                        <Clock className="w-4 h-4" />
+                        <Clock 
+                          className="w-4 h-4"
+                          style={{
+                            color: siteSettings?.primary_color_1 || '#3b82f6'
+                          }}
+                        />
                         <span>{article.reading_time} دقيقة</span>
                       </div>
                     )}
                     {article.views_count && (
                       <div className="flex items-center gap-1">
-                        <Eye className="w-4 h-4" />
+                        <Eye 
+                          className="w-4 h-4"
+                          style={{
+                            color: siteSettings?.primary_color_1 || '#3b82f6'
+                          }}
+                        />
                         <span>{article.views_count.toLocaleString('ar')}</span>
                       </div>
                     )}
                   </div>
                 </div>
 
-                <Button asChild className="w-full">
+                <Button 
+                  asChild 
+                  className="w-full"
+                  style={{
+                    backgroundColor: siteSettings?.primary_color_1 || '#3b82f6',
+                    '&:hover': {
+                      backgroundColor: siteSettings?.primary_color_2 || '#6366f1'
+                    }
+                  }}
+                >
                   <Link to={`/articles/${article.slug}`}>
                     اقرأ المقال
                   </Link>
@@ -183,7 +327,16 @@ const ArticlesList = () => {
           <div className="text-center py-12">
             <h3 className="text-2xl font-semibold mb-4">لا توجد مقالات متاحة حالياً</h3>
             <p className="text-muted-foreground">سيتم إضافة المزيد من المقالات قريباً</p>
-            <Button asChild className="mt-4">
+            <Button 
+              asChild 
+              className="mt-4"
+              style={{
+                backgroundColor: siteSettings?.primary_color_1 || '#3b82f6',
+                '&:hover': {
+                  backgroundColor: siteSettings?.primary_color_2 || '#6366f1'
+                }
+              }}
+            >
               <Link to="/">العودة إلى الصفحة الرئيسية</Link>
             </Button>
           </div>

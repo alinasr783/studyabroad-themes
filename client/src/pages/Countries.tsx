@@ -5,6 +5,7 @@ import { ArrowLeft, Star, ChevronLeft, ChevronRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 
 interface Country {
   id: string;
@@ -29,6 +30,12 @@ interface Country {
   is_trending?: boolean;
 }
 
+interface SiteSettings {
+  primary_color_1?: string;
+  primary_color_2?: string;
+  primary_color_3?: string;
+}
+
 const CountriesPage = () => {
   const [activeTab, setActiveTab] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
@@ -36,16 +43,50 @@ const CountriesPage = () => {
   const [loading, setLoading] = useState(true);
   const itemsPerPage = 6;
 
-  useEffect(() => {
-    fetchCountries();
-  }, []);
+  // الحصول على client_id بناءً على النطاق
+  const { data: clientData } = useQuery({
+    queryKey: ['clientInfo'],
+    queryFn: async () => {
+      const domain = window.location.hostname;
+      const { data, error } = await supabase
+        .from('clients')
+        .select('id')
+        .eq('domain', domain)
+        .single();
 
+      if (error) throw error;
+      return data;
+    }
+  });
+
+  // جلب إعدادات الموقع من Supabase بناءً على client_id
+  const { data: siteSettings } = useQuery<SiteSettings>({
+    queryKey: ['siteSettings', clientData?.id],
+    queryFn: async () => {
+      if (!clientData?.id) return null;
+
+      const { data, error } = await supabase
+        .from('site_settings')
+        .select('primary_color_1, primary_color_2, primary_color_3')
+        .eq('client_id', clientData.id)
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!clientData?.id
+  });
+
+  // جلب الدول من Supabase بناءً على client_id
   const fetchCountries = async () => {
     try {
       setLoading(true);
+      if (!clientData?.id) return;
+
       const { data, error } = await supabase
         .from('countries')
         .select('*')
+        .eq('client_id', clientData.id)
         .order('name_ar', { ascending: true });
 
       if (error) throw error;
@@ -57,6 +98,10 @@ const CountriesPage = () => {
     }
   };
 
+  useEffect(() => {
+    fetchCountries();
+  }, [clientData?.id]);
+
   const getCostLevel = (country: Country) => {
     if (!country.study_cost_min) return "غير محدد";
     if (country.study_cost_min < 5000) return "منخفضة";
@@ -65,14 +110,38 @@ const CountriesPage = () => {
   };
 
   const getContinent = (country: Country) => {
-    // يمكنك إضافة منطق لتحديد القارة بناءً على اسم الدولة أو أي معيار آخر
-    // هذا مثال مبسط فقط
     if (['تركيا', 'قيرغيزستان', 'ماليزيا'].includes(country.name_ar)) return "asia";
     if (['روسيا', 'ألمانيا', 'المملكة المتحدة'].includes(country.name_ar)) return "europe";
     if (['كندا'].includes(country.name_ar)) return "america";
     if (['أستراليا'].includes(country.name_ar)) return "australia";
     return "other";
   };
+
+  // إنشاء ستايل ديناميكي للألوان
+  const getGradientStyle = () => {
+    if (!siteSettings) return {};
+
+    return {
+      background: `linear-gradient(to right, ${siteSettings.primary_color_1 || '#3b82f6'}, ${siteSettings.primary_color_2 || '#6366f1'})`,
+      backgroundImage: `linear-gradient(to right, ${siteSettings.primary_color_1 || '#3b82f6'}, ${siteSettings.primary_color_2 || '#6366f1'})`
+    };
+  };
+
+  // تطبيق ألوان الموقع الديناميكية
+  useEffect(() => {
+    if (siteSettings) {
+      const root = document.documentElement;
+      if (siteSettings.primary_color_1) {
+        root.style.setProperty('--primary', siteSettings.primary_color_1);
+      }
+      if (siteSettings.primary_color_2) {
+        root.style.setProperty('--primary-2', siteSettings.primary_color_2);
+      }
+      if (siteSettings.primary_color_3) {
+        root.style.setProperty('--primary-3', siteSettings.primary_color_3);
+      }
+    }
+  }, [siteSettings]);
 
   const filteredDestinations = activeTab === "all" 
     ? countries 
@@ -115,14 +184,14 @@ const CountriesPage = () => {
     <div className="flex flex-col min-h-screen" dir="rtl">
       <Layout>
         <main className="flex-grow">
-          <section className="py-12 md:py-16 bg-gradient-to-b from-gray-50 to-white">
-            <div className="container px-4 sm:px-6 lg:px-8 mx-auto">
-              {/* العنوان الرئيسي مع التبويبات */}
+          {/* Hero Section مع التدرج اللوني الديناميكي */}
+          <section className="py-12 md:py-16" style={getGradientStyle()}>
+            <div className="container px-4 sm:px-6 lg:px-8 mx-auto text-white">
               <div className="text-center mb-12">
-                <h1 className="text-3xl md:text-4xl font-bold font-cairo mb-4 text-gray-800">
+                <h1 className="text-3xl md:text-4xl font-bold font-cairo mb-4">
                   الوجهات الدراسية حول العالم
                 </h1>
-                <p className="text-gray-600 max-w-2xl mx-auto mb-6">
+                <p className="text-white/90 max-w-2xl mx-auto mb-6">
                   اكتشف أفضل الدول للدراسة في الخارج حسب تخصصك وميزانيتك
                 </p>
 
@@ -131,6 +200,14 @@ const CountriesPage = () => {
                     variant={activeTab === "all" ? "default" : "outline"} 
                     onClick={() => { setActiveTab("all"); setCurrentPage(1); }}
                     className="rounded-full px-4"
+                    style={activeTab === "all" ? {
+                      backgroundColor: 'white',
+                      color: siteSettings?.primary_color_1 || '#3b82f6'
+                    } : {
+                      backgroundColor: 'transparent',
+                      color: 'white',
+                      borderColor: 'white'
+                    }}
                   >
                     جميع الدول
                   </Button>
@@ -138,6 +215,14 @@ const CountriesPage = () => {
                     variant={activeTab === "asia" ? "default" : "outline"} 
                     onClick={() => { setActiveTab("asia"); setCurrentPage(1); }}
                     className="rounded-full px-4"
+                    style={activeTab === "asia" ? {
+                      backgroundColor: 'white',
+                      color: siteSettings?.primary_color_1 || '#3b82f6'
+                    } : {
+                      backgroundColor: 'transparent',
+                      color: 'white',
+                      borderColor: 'white'
+                    }}
                   >
                     آسيا
                   </Button>
@@ -145,6 +230,14 @@ const CountriesPage = () => {
                     variant={activeTab === "europe" ? "default" : "outline"} 
                     onClick={() => { setActiveTab("europe"); setCurrentPage(1); }}
                     className="rounded-full px-4"
+                    style={activeTab === "europe" ? {
+                      backgroundColor: 'white',
+                      color: siteSettings?.primary_color_1 || '#3b82f6'
+                    } : {
+                      backgroundColor: 'transparent',
+                      color: 'white',
+                      borderColor: 'white'
+                    }}
                   >
                     أوروبا
                   </Button>
@@ -152,6 +245,14 @@ const CountriesPage = () => {
                     variant={activeTab === "america" ? "default" : "outline"} 
                     onClick={() => { setActiveTab("america"); setCurrentPage(1); }}
                     className="rounded-full px-4"
+                    style={activeTab === "america" ? {
+                      backgroundColor: 'white',
+                      color: siteSettings?.primary_color_1 || '#3b82f6'
+                    } : {
+                      backgroundColor: 'transparent',
+                      color: 'white',
+                      borderColor: 'white'
+                    }}
                   >
                     أمريكا
                   </Button>
@@ -159,12 +260,24 @@ const CountriesPage = () => {
                     variant={activeTab === "australia" ? "default" : "outline"} 
                     onClick={() => { setActiveTab("australia"); setCurrentPage(1); }}
                     className="rounded-full px-4"
+                    style={activeTab === "australia" ? {
+                      backgroundColor: 'white',
+                      color: siteSettings?.primary_color_1 || '#3b82f6'
+                    } : {
+                      backgroundColor: 'transparent',
+                      color: 'white',
+                      borderColor: 'white'
+                    }}
                   >
                     أستراليا
                   </Button>
                 </div>
               </div>
+            </div>
+          </section>
 
+          <section className="bg-gradient-to-b from-gray-50 to-white">
+            <div className="container px-4 sm:px-6 lg:px-8 mx-auto py-12">
               {/* بطاقات الدول */}
               {paginatedDestinations.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -189,7 +302,10 @@ const CountriesPage = () => {
                             <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
 
                             {country.is_featured && (
-                              <div className="absolute top-4 left-4 bg-orange-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-sm flex items-center gap-1">
+                              <div 
+                                className="absolute top-4 left-4 text-white px-3 py-1 rounded-full text-xs font-bold shadow-sm flex items-center gap-1"
+                                style={{ backgroundColor: siteSettings?.primary_color_1 || '#3b82f6' }}
+                              >
                                 <Star className="h-3 w-3" />
                                 <span>مميزة</span>
                               </div>
@@ -241,7 +357,8 @@ const CountriesPage = () => {
                             {/* زر التفاصيل */}
                             <Button 
                               asChild
-                              className="w-full mt-auto bg-orange-500 hover:bg-orange-600 text-white"
+                              className="w-full mt-auto text-white"
+                              style={getGradientStyle()}
                             >
                               <Link to={`/countries/${country.slug}`} className="flex items-center justify-center gap-2">
                                 <span>استكشف الدراسة في {country.name_ar}</span>
@@ -269,6 +386,7 @@ const CountriesPage = () => {
                     onClick={handleNextPage}
                     disabled={currentPage === totalPages || totalPages === 0}
                     className="disabled:opacity-50"
+                    style={{ borderColor: siteSettings?.primary_color_1 || '#3b82f6' }}
                   >
                     <ChevronLeft className="h-4 w-4" />
                   </Button>
@@ -278,6 +396,7 @@ const CountriesPage = () => {
                     onClick={handlePrevPage}
                     disabled={currentPage === 1}
                     className="disabled:opacity-50"
+                    style={{ borderColor: siteSettings?.primary_color_1 || '#3b82f6' }}
                   >
                     <ChevronRight className="h-4 w-4" />
                   </Button>
@@ -286,8 +405,12 @@ const CountriesPage = () => {
                   </span>
                 </div>
 
-                <Button asChild className="bg-orange-500 hover:bg-orange-600 text-white">
-                  <Link to="/contact" className="font-semibold flex items-center gap-2">
+                <Button 
+                  asChild 
+                  className="text-white font-semibold flex items-center gap-2"
+                  style={getGradientStyle()}
+                >
+                  <Link to="/contact">
                     احصل على استشارة مجانية
                     <ArrowLeft className="h-4 w-4" />
                   </Link>

@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { Globe, GraduationCap, BookOpen, FileText, MessageSquare, Star } from "lucide-react";
 import AdminLayout from "@/components/admin/AdminLayout";
+import { useNavigate } from "react-router-dom";
 
 interface Stats {
   countries: number;
@@ -25,26 +26,57 @@ const AdminDashboard = () => {
     testimonials: 0,
   });
   const [loading, setLoading] = useState(true);
+  const [clientId, setClientId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    fetchStats();
-  }, []);
+    const checkSessionAndFetchData = async () => {
+      try {
+        const session = localStorage.getItem("manager_session");
+        if (!session) {
+          navigate("/admin/login");
+          return;
+        }
 
-  const fetchStats = async () => {
+        const sessionData = JSON.parse(session);
+        if (!sessionData.client_id) {
+          throw new Error("بيانات الجلسة غير صالحة");
+        }
+
+        // التحقق من أن الجلسة لم تنتهي (30 دقيقة)
+        const sessionAge = Date.now() - (sessionData.timestamp || 0);
+        if (sessionAge > 30 * 60 * 1000) {
+          localStorage.removeItem("manager_session");
+          navigate("/admin/login");
+          return;
+        }
+
+        setClientId(sessionData.client_id);
+        await fetchStats(sessionData.client_id);
+      } catch (err) {
+        console.error("Error initializing dashboard:", err);
+        setError(err instanceof Error ? err.message : "حدث خطأ غير متوقع");
+        setLoading(false);
+      }
+    };
+
+    checkSessionAndFetchData();
+  }, [navigate]);
+
+  const fetchStats = async (client_id: string) => {
     try {
-      const session = localStorage.getItem("manager_session");
-      if (!session) return;
-
-      const { client_id } = JSON.parse(session);
+      setLoading(true);
+      setError(null);
 
       const [
-        countriesRes,
-        universitiesRes,
-        programsRes,
-        articlesRes,
-        consultationsRes,
-        messagesRes,
-        testimonialsRes,
+        { count: countriesCount },
+        { count: universitiesCount },
+        { count: programsCount },
+        { count: articlesCount },
+        { count: consultationsCount },
+        { count: messagesCount },
+        { count: testimonialsCount },
       ] = await Promise.all([
         supabase.from("countries").select("id", { count: "exact" }).eq("client_id", client_id),
         supabase.from("universities").select("id", { count: "exact" }).eq("client_id", client_id),
@@ -56,16 +88,17 @@ const AdminDashboard = () => {
       ]);
 
       setStats({
-        countries: countriesRes.count || 0,
-        universities: universitiesRes.count || 0,
-        programs: programsRes.count || 0,
-        articles: articlesRes.count || 0,
-        consultations: consultationsRes.count || 0,
-        messages: messagesRes.count || 0,
-        testimonials: testimonialsRes.count || 0,
+        countries: countriesCount || 0,
+        universities: universitiesCount || 0,
+        programs: programsCount || 0,
+        articles: articlesCount || 0,
+        consultations: consultationsCount || 0,
+        messages: messagesCount || 0,
+        testimonials: testimonialsCount || 0,
       });
     } catch (error) {
       console.error("Error fetching stats:", error);
+      setError("حدث خطأ أثناء جلب البيانات. يرجى التحقق من اتصال الشبكة أو إعادة المحاولة لاحقًا.");
     } finally {
       setLoading(false);
     }
@@ -94,12 +127,26 @@ const AdminDashboard = () => {
     );
   }
 
+  if (error) {
+    return (
+      <AdminLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center text-red-500">
+            <p className="font-bold">خطأ!</p>
+            <p>{error}</p>
+            {clientId && <p className="text-sm mt-2">Client ID: {clientId}</p>}
+          </div>
+        </div>
+      </AdminLayout>
+    );
+  }
+
   return (
     <AdminLayout>
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold">الرئيسية</h1>
-          <p className="text-muted-foreground">نظرة عامة على موقعك</p>
+          <h1 className="text-3xl font-bold">لوحة التحكم</h1>
+          <p className="text-muted-foreground">نظرة عامة على موقعك {clientId && `(Client ID: ${clientId})`}</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

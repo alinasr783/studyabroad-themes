@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -20,8 +21,10 @@ interface Manager {
 const AdminManagers = () => {
   const [managers, setManagers] = useState<Manager[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
     email: "",
@@ -29,18 +32,42 @@ const AdminManagers = () => {
   });
 
   useEffect(() => {
-    fetchManagers();
-  }, []);
+    const checkSessionAndFetchData = async () => {
+      try {
+        const session = localStorage.getItem("manager_session");
+        if (!session) {
+          navigate("/admin/login");
+          return;
+        }
 
-  const getClientId = () => {
-    const session = localStorage.getItem("manager_session");
-    return session ? JSON.parse(session).client_id : null;
-  };
+        const sessionData = JSON.parse(session);
+        if (!sessionData.client_id) {
+          throw new Error("بيانات الجلسة غير صالحة");
+        }
 
-  const fetchManagers = async () => {
+        // التحقق من أن الجلسة لم تنتهي (30 دقيقة)
+        const sessionAge = Date.now() - (sessionData.timestamp || 0);
+        if (sessionAge > 30 * 60 * 1000) {
+          localStorage.removeItem("manager_session");
+          navigate("/admin/login");
+          return;
+        }
+
+        await fetchManagers(sessionData.client_id);
+      } catch (err) {
+        console.error("Error initializing managers:", err);
+        setError(err instanceof Error ? err.message : "حدث خطأ غير متوقع");
+        setLoading(false);
+      }
+    };
+
+    checkSessionAndFetchData();
+  }, [navigate]);
+
+  const fetchManagers = async (clientId: string) => {
     try {
-      const clientId = getClientId();
-      if (!clientId) return;
+      setLoading(true);
+      setError(null);
 
       const { data, error } = await supabase
         .from("managers")
@@ -52,9 +79,10 @@ const AdminManagers = () => {
       setManagers(data || []);
     } catch (error) {
       console.error("Error fetching managers:", error);
+      setError("حدث خطأ أثناء تحميل المديرين");
       toast({
         title: "خطأ",
-        description: "حدث خطأ أثناء تحميل المديرين",
+        description: "حدث خطأ أثناء تحميل قائمة المديرين",
         variant: "destructive",
       });
     } finally {
@@ -71,10 +99,15 @@ const AdminManagers = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
-      const clientId = getClientId();
-      if (!clientId) return;
+      const session = localStorage.getItem("manager_session");
+      if (!session) {
+        navigate("/admin/login");
+        return;
+      }
+
+      const { client_id } = JSON.parse(session);
 
       // Hash password (in a real app, you'd use proper bcrypt or similar)
       const hashedPassword = btoa(formData.password); // Simple base64 encoding for demo
@@ -82,7 +115,7 @@ const AdminManagers = () => {
       const managerData = {
         email: formData.email,
         password: hashedPassword,
-        client_id: clientId,
+        client_id,
       };
 
       const { error } = await supabase
@@ -96,7 +129,7 @@ const AdminManagers = () => {
         description: "تم إضافة المدير بنجاح",
       });
 
-      fetchManagers();
+      fetchManagers(client_id);
       resetForm();
       setShowForm(false);
     } catch (error) {
@@ -113,10 +146,19 @@ const AdminManagers = () => {
     if (!confirm("هل أنت متأكد من حذف هذا المدير؟")) return;
 
     try {
+      const session = localStorage.getItem("manager_session");
+      if (!session) {
+        navigate("/admin/login");
+        return;
+      }
+
+      const { client_id } = JSON.parse(session);
+
       const { error } = await supabase
         .from("managers")
         .delete()
-        .eq("id", id);
+        .eq("id", id)
+        .eq("client_id", client_id);
 
       if (error) throw error;
 
@@ -125,7 +167,7 @@ const AdminManagers = () => {
         description: "تم حذف المدير بنجاح",
       });
 
-      fetchManagers();
+      fetchManagers(client_id);
     } catch (error) {
       console.error("Error deleting manager:", error);
       toast({
@@ -161,6 +203,19 @@ const AdminManagers = () => {
     );
   }
 
+  if (error) {
+    return (
+      <AdminLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center text-red-500">
+            <p className="font-bold">خطأ!</p>
+            <p>{error}</p>
+          </div>
+        </div>
+      </AdminLayout>
+    );
+  }
+
   return (
     <AdminLayout>
       <div className="space-y-6">
@@ -169,7 +224,7 @@ const AdminManagers = () => {
             <h1 className="text-3xl font-bold">إدارة المديرين</h1>
             <p className="text-muted-foreground">إدارة حسابات المديرين في النظام</p>
           </div>
-          
+
           <Dialog open={showForm} onOpenChange={setShowForm}>
             <DialogTrigger asChild>
               <Button onClick={() => resetForm()}>
@@ -177,12 +232,12 @@ const AdminManagers = () => {
                 إضافة مدير جديد
               </Button>
             </DialogTrigger>
-            
+
             <DialogContent className="max-w-md">
               <DialogHeader>
                 <DialogTitle>إضافة مدير جديد</DialogTitle>
               </DialogHeader>
-              
+
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <Label htmlFor="email">البريد الإلكتروني *</Label>
@@ -194,7 +249,7 @@ const AdminManagers = () => {
                     required
                   />
                 </div>
-                
+
                 <div>
                   <Label htmlFor="password">كلمة المرور *</Label>
                   <Input
@@ -256,7 +311,7 @@ const AdminManagers = () => {
                 ))}
               </TableBody>
             </Table>
-            
+
             {managers.length === 0 && (
               <div className="text-center py-8">
                 <p className="text-muted-foreground">لا يوجد مديرين حتى الآن</p>

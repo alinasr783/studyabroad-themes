@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
@@ -40,6 +40,7 @@ interface Country {
 const AdminCountries = () => {
   const [countries, setCountries] = useState<Country[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [editingCountry, setEditingCountry] = useState<Country | null>(null);
   const [formData, setFormData] = useState({
@@ -63,20 +64,45 @@ const AdminCountries = () => {
     is_trending: false,
   });
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
-    fetchCountries();
-  }, []);
+    const checkSessionAndFetchData = async () => {
+      try {
+        const session = localStorage.getItem("manager_session");
+        if (!session) {
+          navigate("/admin/login");
+          return;
+        }
 
-  const getClientId = () => {
-    const session = localStorage.getItem("manager_session");
-    return session ? JSON.parse(session).client_id : null;
-  };
+        const sessionData = JSON.parse(session);
+        if (!sessionData.client_id) {
+          throw new Error("بيانات الجلسة غير صالحة");
+        }
 
-  const fetchCountries = async () => {
+        // التحقق من أن الجلسة لم تنتهي (30 دقيقة)
+        const sessionAge = Date.now() - (sessionData.timestamp || 0);
+        if (sessionAge > 30 * 60 * 1000) {
+          localStorage.removeItem("manager_session");
+          navigate("/admin/login");
+          return;
+        }
+
+        await fetchCountries(sessionData.client_id);
+      } catch (err) {
+        console.error("Error initializing countries:", err);
+        setError(err instanceof Error ? err.message : "حدث خطأ غير متوقع");
+        setLoading(false);
+      }
+    };
+
+    checkSessionAndFetchData();
+  }, [navigate]);
+
+  const fetchCountries = async (clientId: string) => {
     try {
-      const clientId = getClientId();
-      if (!clientId) return;
+      setLoading(true);
+      setError(null);
 
       const { data, error } = await supabase
         .from("countries")
@@ -88,9 +114,10 @@ const AdminCountries = () => {
       setCountries(data || []);
     } catch (error) {
       console.error("Error fetching countries:", error);
+      setError("حدث خطأ أثناء تحميل الدول");
       toast({
         title: "خطأ",
-        description: "حدث خطأ أثناء تحميل البيانات",
+        description: "حدث خطأ أثناء تحميل قائمة الدول",
         variant: "destructive",
       });
     } finally {
@@ -109,12 +136,17 @@ const AdminCountries = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const clientId = getClientId();
-      if (!clientId) return;
+      const session = localStorage.getItem("manager_session");
+      if (!session) {
+        navigate("/admin/login");
+        return;
+      }
+
+      const { client_id } = JSON.parse(session);
 
       const countryData = {
         ...formData,
-        client_id: clientId,
+        client_id,
         study_cost_min: formData.study_cost_min ? parseInt(formData.study_cost_min) : null,
         study_cost_max: formData.study_cost_max ? parseInt(formData.study_cost_max) : null,
         living_cost_min: formData.living_cost_min ? parseInt(formData.living_cost_min) : null,
@@ -125,10 +157,11 @@ const AdminCountries = () => {
         const { error } = await supabase
           .from("countries")
           .update(countryData)
-          .eq("id", editingCountry.id);
-        
+          .eq("id", editingCountry.id)
+          .eq("client_id", client_id);
+
         if (error) throw error;
-        
+
         toast({
           title: "تم التحديث",
           description: "تم تحديث الدولة بنجاح",
@@ -137,9 +170,9 @@ const AdminCountries = () => {
         const { error } = await supabase
           .from("countries")
           .insert(countryData);
-        
+
         if (error) throw error;
-        
+
         toast({
           title: "تمت الإضافة",
           description: "تم إضافة الدولة بنجاح",
@@ -147,7 +180,7 @@ const AdminCountries = () => {
       }
 
       resetForm();
-      fetchCountries();
+      fetchCountries(client_id);
     } catch (error) {
       console.error("Error saving country:", error);
       toast({
@@ -178,7 +211,7 @@ const AdminCountries = () => {
       study_cost_max: country.study_cost_max?.toString() || "",
       living_cost_min: country.living_cost_min?.toString() || "",
       living_cost_max: country.living_cost_max?.toString() || "",
-      is_trending: country.is_trending,
+      is_trending: country.is_trending || false,
     });
     setShowForm(true);
   };
@@ -187,10 +220,19 @@ const AdminCountries = () => {
     if (!confirm("هل أنت متأكد من حذف هذه الدولة؟")) return;
 
     try {
+      const session = localStorage.getItem("manager_session");
+      if (!session) {
+        navigate("/admin/login");
+        return;
+      }
+
+      const { client_id } = JSON.parse(session);
+
       const { error } = await supabase
         .from("countries")
         .delete()
-        .eq("id", id);
+        .eq("id", id)
+        .eq("client_id", client_id);
 
       if (error) throw error;
 
@@ -199,7 +241,7 @@ const AdminCountries = () => {
         description: "تم حذف الدولة بنجاح",
       });
 
-      fetchCountries();
+      fetchCountries(client_id);
     } catch (error) {
       console.error("Error deleting country:", error);
       toast({
@@ -240,6 +282,19 @@ const AdminCountries = () => {
       <AdminLayout>
         <div className="flex items-center justify-center h-64">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <AdminLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center text-red-500">
+            <p className="font-bold">خطأ!</p>
+            <p>{error}</p>
+          </div>
         </div>
       </AdminLayout>
     );

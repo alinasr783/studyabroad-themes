@@ -8,33 +8,47 @@ interface AdminLayoutProps {
   children: ReactNode;
 }
 
-interface ManagerSession {
+interface AdminSession {
   id: string;
   email: string;
-  client_id: string;
+  full_name: string;
+  client_id: string | null;
   client: {
     name: string;
     slug: string;
-  };
+  } | null;
 }
 
 const AdminLayout = ({ children }: AdminLayoutProps) => {
-  const [session, setSession] = useState<ManagerSession | null>(null);
+  const [session, setSession] = useState<AdminSession | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
 
   useEffect(() => {
-    const storedSession = localStorage.getItem("manager_session");
-    if (storedSession) {
-      setSession(JSON.parse(storedSession));
-    } else {
-      navigate("/login");
-    }
+    // التحقق من وجود جلسة صالحة
+    const checkSession = () => {
+      const storedSession = sessionStorage.getItem("admin_session");
+      if (!storedSession) {
+        navigate("/admin/dashboard");
+        return;
+      }
+
+      try {
+        const sessionData = JSON.parse(storedSession);
+        setSession(sessionData);
+      } catch (error) {
+        console.error("Error parsing session data:", error);
+        navigate("/admin/dashboard");
+      }
+    };
+
+    checkSession();
   }, [navigate]);
 
   const handleLogout = () => {
-    localStorage.removeItem("manager_session");
-    navigate("/login");
+    // مسح الجلسة من sessionStorage
+    sessionStorage.removeItem("admin_session");
+    navigate("/admin/dashboard");
   };
 
   const menuItems = [
@@ -51,7 +65,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
   ];
 
   if (!session) {
-    return null;
+    return null; // أو يمكنك عرض شاشة تحميل هنا
   }
 
   return (
@@ -65,10 +79,13 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
               {session.client ? session.client.name : "مدير النظام"}
             </p>
           </div>
-          <Button onClick={handleLogout} variant="outline" size="sm">
-            <LogOut className="w-4 h-4 ml-2" />
-            تسجيل الخروج
-          </Button>
+          <div className="flex items-center gap-4">
+            <span className="text-sm">{session.full_name || session.email}</span>
+            <Button onClick={handleLogout} variant="outline" size="sm">
+              <LogOut className="w-4 h-4 ml-2" />
+              تسجيل الخروج
+            </Button>
+          </div>
         </div>
       </header>
 

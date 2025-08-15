@@ -1,7 +1,22 @@
+import { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { useQuery } from "@tanstack/react-query";
+
+interface ContactInfo {
+  phone_numbers: string[];
+}
+
+interface SiteSettings {
+  primary_color_1: string;
+  primary_color_2: string;
+  primary_color_3: string;
+}
 
 // البيانات الافتراضية في حالة عدم توفر بيانات من قاعدة البيانات
 const defaultAboutData = {
@@ -14,8 +29,8 @@ const defaultAboutData = {
     description1: "فيوتشر إنترناشونال جروب هي وكالة رائدة في الاستشارات التعليمية. نختصر لك الطريق نحو أفضل الجامعات العالمية بشراكاتنا المعتمدة وخبراتنا المتراكمة.",
     description2: "منذ تأسيسنا، ساعدنا آلاف الطلاب في تحقيق طموحاتهم الأكاديمية عبر متابعة شخصية تبدأ من التقديم حتى التخرج.",
     stats: [
-      { value: "10,000+", label: "طلاب نجحوا", color: "text-blue-600" },
-      { value: "250+", label: "جامعة شريكة", color: "text-orange-500" }
+      { value: "10,000+", label: "طلاب نجحوا" },
+      { value: "250+", label: "جامعة شريكة" }
     ],
     imageUrl: "https://d2pi0n2fm836iz.cloudfront.net/488796/05102023153512645bb9b085666.png"
   },
@@ -26,38 +41,32 @@ const defaultAboutData = {
       {
         title: "استشارة أكاديمية مجانية",
         description: "تقييم شامل لمؤهلاتك واختيار أفضل التخصصات والجامعات المناسبة",
-        icon: "🎓",
-        color: "bg-blue-100"
+        icon: "🎓"
       },
       {
         title: "تقديم طلبات القبول",
         description: "إعداد كامل للمستندات المطلوبة وتقديمها للجامعات المعتمدة",
-        icon: "📄",
-        color: "bg-purple-100"
+        icon: "📄"
       },
       {
         title: "مساعدة في تأشيرة الدراسة",
         description: "توجيهك خطوة بخطوة في إجراءات الحصول على الفيزا الدراسية",
-        icon: "✈️",
-        color: "bg-green-100"
+        icon: "✈️"
       },
       {
         title: "حجز السكن الطلابي",
         description: "ترتيب خيارات سكن مناسبة قريبة من جامعتك",
-        icon: "🏠",
-        color: "bg-yellow-100"
+        icon: "🏠"
       },
       {
         title: "متابعة أكاديمية شخصية",
         description: "دعم مستمر طوال فترة دراستك حتى التخرج",
-        icon: "👥",
-        color: "bg-pink-100"
+        icon: "👥"
       },
       {
         title: "خدمات ما بعد الوصول",
         description: "مساعدتك في التأقلم بعد وصولك إلى بلد الدراسة",
-        icon: "🌟",
-        color: "bg-indigo-100"
+        icon: "🌟"
       }
     ]
   },
@@ -93,13 +102,107 @@ const defaultAboutData = {
 };
 
 const About = () => {
+  const [contactInfo, setContactInfo] = useState<ContactInfo | null>(null);
+  const [clientId, setClientId] = useState<string | null>(null);
+  const navigate = useNavigate();
+  const { toast } = useToast();
   const aboutData = defaultAboutData;
+
+  // جلب معرف العميل أولاً
+  useEffect(() => {
+    const fetchClientId = async () => {
+      try {
+        const domain = window.location.hostname;
+        const { data: clientData, error: clientError } = await supabase
+          .from("clients")
+          .select("id")
+          .eq("domain", domain)
+          .maybeSingle();
+
+        if (clientError) throw clientError;
+        if (!clientData) throw new Error("لم يتم العثور على عميل لهذا الدومين");
+
+        setClientId(clientData.id);
+      } catch (err) {
+        console.error("Error fetching client ID:", err);
+        toast({
+          title: "خطأ في تحميل البيانات",
+          description: "حدث خطأ أثناء تحميل البيانات الأساسية. يرجى المحاولة لاحقاً.",
+          variant: "destructive"
+        });
+      }
+    };
+
+    fetchClientId();
+  }, [toast]);
+
+  // جلب إعدادات الموقع من Supabase بناءً على clientId
+  const { data: siteSettings } = useQuery<SiteSettings>({
+    queryKey: ['siteSettings', clientId],
+    queryFn: async () => {
+      if (!clientId) return null;
+
+      const { data, error } = await supabase
+        .from('site_settings')
+        .select('primary_color_1, primary_color_2, primary_color_3')
+        .eq('client_id', clientId)
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!clientId
+  });
+
+  useEffect(() => {
+    const fetchContactInfo = async () => {
+      if (!clientId) return;
+
+      try {
+        const { data, error } = await supabase
+          .from('contact_info')
+          .select('phone_numbers')
+          .eq('client_id', clientId)
+          .single();
+
+        if (error) throw error;
+        if (data) setContactInfo(data);
+      } catch (error) {
+        console.error("Error fetching contact info:", error);
+      }
+    };
+
+    fetchContactInfo();
+  }, [clientId]);
+
+  const handleContactClick = () => {
+    if (contactInfo?.phone_numbers?.length) {
+      const phoneNumber = contactInfo.phone_numbers[0].replace(/[^0-9+]/g, '');
+      window.open(`tel:${phoneNumber}`, '_blank');
+    } else {
+      toast({
+        title: "لا يوجد رقم هاتف متاح",
+        description: "الرجاء المحاولة لاحقاً أو زيارة صفحة الاتصال",
+        variant: "destructive"
+      });
+      navigate('/contact');
+    }
+  };
+
+  // الحصول على الألوان أو استخدام القيم الافتراضية
+  const primaryColor = siteSettings?.primary_color_1 || 'var(--primary)';
+  const secondaryColor = siteSettings?.primary_color_2 || 'var(--secondary)';
+  const accentColor = siteSettings?.primary_color_3 || 'var(--accent)';
 
   return (
     <Layout>
-
       {/* Hero Section */}
-      <section className="py-12 md:py-20 bg-gradient-to-br from-blue-600 to-blue-700 text-white relative overflow-hidden text-right px-4">
+      <section 
+        className="py-12 md:py-20 text-white relative overflow-hidden text-right px-4"
+        style={{
+          background: `linear-gradient(to bottom right, ${primaryColor}, ${secondaryColor})`
+        }}
+      >
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-0 left-0 w-full h-full bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiPjxkZWZzPjxwYXR0ZXJuIGlkPSJwYXR0ZXJuIiB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHBhdHRlcm5Vbml0cz0idXNlclNwYWNlT25Vc2UiIHBhdHRlcm5UcmFuc2Zvcm09InJvdGF0ZSg0NSkiPjxyZWN0IHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCIgZmlsbD0icmdiYSgyNTUsMjU1LDI1NSwwLjA1KSIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNwYXR0ZXJuKSIvPjwvc3ZnPg==')]"></div>
         </div>
@@ -108,7 +211,7 @@ const About = () => {
             <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold font-cairo mb-4 md:mb-6 leading-tight">
               {aboutData.hero.title}
             </h1>
-            <p className="text-base md:text-lg text-blue-100 leading-relaxed opacity-90">
+            <p className="text-base md:text-lg leading-relaxed opacity-90" style={{ color: `${primaryColor}90` }}>
               {aboutData.hero.description}
             </p>
           </div>
@@ -132,9 +235,17 @@ const About = () => {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {aboutData.companyInfo.stats.map((stat, index) => (
-                  <Card key={index} className="hover:scale-[1.02] transition-transform duration-300 text-center">
+                  <Card 
+                    key={index} 
+                    className="hover:scale-[1.02] transition-transform duration-300 text-center"
+                  >
                     <CardContent className="p-4 md:p-6">
-                      <div className={`text-2xl md:text-3xl font-bold ${stat.color} mb-2`}>{stat.value}</div>
+                      <div 
+                        className="text-2xl md:text-3xl font-bold mb-2"
+                        style={{ color: primaryColor }}
+                      >
+                        {stat.value}
+                      </div>
                       <div className="text-xs md:text-sm text-gray-500">{stat.label}</div>
                     </CardContent>
                   </Card>
@@ -178,7 +289,12 @@ const About = () => {
                 className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border border-gray-200 text-right"
               >
                 <CardContent className="p-4 md:p-6">
-                  <div className={`w-12 h-12 md:w-16 md:h-16 ${service.color} rounded-full flex items-center justify-center mb-3 mr-auto`}>
+                  <div 
+                    className="w-12 h-12 md:w-16 md:h-16 rounded-full flex items-center justify-center mb-3 mr-auto"
+                    style={{
+                      backgroundColor: `${primaryColor}10`
+                    }}
+                  >
                     <span className="text-2xl md:text-3xl">{service.icon}</span>
                   </div>
                   <h3 className="text-lg md:text-xl font-semibold font-cairo mb-2 text-gray-800">{service.title}</h3>
@@ -213,7 +329,12 @@ const About = () => {
               >
                 <CardContent className="p-6">
                   <div className="mb-4">
-                    <div className="w-16 h-16 md:w-20 md:h-20 bg-blue-100 rounded-full flex items-center justify-center mb-3 mr-auto">
+                    <div 
+                      className="w-16 h-16 md:w-20 md:h-20 rounded-full flex items-center justify-center mb-3 mr-auto"
+                      style={{
+                        backgroundColor: `${primaryColor}10`
+                      }}
+                    >
                       <span className="text-2xl md:text-3xl">{member.emoji}</span>
                     </div>
                     <h3 className="text-lg md:text-xl font-bold font-cairo mb-1 text-gray-800">
@@ -234,27 +355,36 @@ const About = () => {
       </section>
 
       {/* Contact CTA */}
-      <section className="py-12 md:py-16 bg-gradient-to-r from-blue-600 to-blue-700 text-white relative overflow-hidden text-right px-4">
+      <section 
+        className="py-12 md:py-16 text-white relative overflow-hidden text-right px-4"
+        style={{
+          background: `linear-gradient(to right, ${primaryColor}, ${secondaryColor})`
+        }}
+      >
         <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-0 left-0 w-full h-full bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiPjxkZWZzPjxwYXR0ZXJuIGlkPSJwYXR0ZXJuIiB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHBhdHRlcm5Vbml0cz0idXNlclNwYWNlT25Vc2UiIHBhdHRlcm5UcmFuc2Zvcm09InJvdGF0ZSg0NSkiPjxyZWN0IHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCIgجZmlsbD0icmdiYSgyNTUsMjU1LDI1NSwwLjA1KSIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNwYXR0ZXJuKSIvPjwvc3ZnPg==')]"></div>
+          <div className="absolute top-0 left-0 w-full h-full bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiPjxkZWZzPjxwYXR0ZXJuIGlkPSJwYXR0ZXJuIiB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHBhdHRlcm5Vbml0cz0idXNlclNwYWNlT25Vc2UiIHBhdHRlcm5UcmFuc2Zvcm09InJvdGF0ZSg0NSkiPjxyZWN0IHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCIgZmlsbD0icmdiYSgyNTUsMjU1LDI1NSwwLjA1KSIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNwYXR0ZXJuKSIvPjwvc3ZnPg==')]"></div>
         </div>
         <div className="container mx-auto relative">
           <div className="text-right max-w-3xl mx-auto animate-fade-in-up">
             <h2 className="text-2xl md:text-3xl font-bold font-cairo mb-2 md:mb-4">
               {aboutData.contactCTA.title}
             </h2>
-            <p className="text-blue-100 text-sm md:text-base mb-4 md:mb-8 opacity-90">
+            <p className="text-sm md:text-base mb-4 md:mb-8 opacity-90" style={{ color: `${primaryColor}90` }}>
               {aboutData.contactCTA.subtitle}
             </p>
             <Button 
-              asChild
               size="lg"
-              className="bg-orange-500 hover:bg-orange-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 text-sm md:text-base"
+              className="hover:shadow-xl transition-all duration-300 hover:scale-105 text-sm md:text-base"
+              style={{
+                backgroundColor: accentColor,
+                color: 'white'
+              }}
+              onClick={handleContactClick}
             >
-              <a href="/contact" className="flex items-center justify-end">
+              <div className="flex items-center justify-end">
                 {aboutData.contactCTA.buttonText}
                 <ArrowLeft className="ml-2 h-4 w-4 md:h-5 md:w-5" />
-              </a>
+              </div>
             </Button>
           </div>
         </div>

@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { MapPin, DollarSign, Globe, Clock, Building2, Star, ArrowLeft } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 
 interface Country {
   id: string;
@@ -44,6 +45,12 @@ interface University {
   country_id?: string;
 }
 
+interface SiteSettings {
+  primary_color_1?: string;
+  primary_color_2?: string;
+  primary_color_3?: string;
+}
+
 const CountryDetail = () => {
   const navigate = useNavigate();
   const { slug } = useParams();
@@ -51,16 +58,68 @@ const CountryDetail = () => {
   const [country, setCountry] = useState<Country | null>(null);
   const [universities, setUniversities] = useState<University[]>([]);
 
+  // الحصول على client_id بناءً على النطاق
+  const { data: clientData } = useQuery({
+    queryKey: ['clientInfo'],
+    queryFn: async () => {
+      const domain = window.location.hostname;
+      const { data, error } = await supabase
+        .from('clients')
+        .select('id')
+        .eq('domain', domain)
+        .single();
+
+      if (error) throw error;
+      return data;
+    }
+  });
+
+  // جلب إعدادات الموقع من Supabase بناءً على client_id
+  const { data: siteSettings } = useQuery<SiteSettings>({
+    queryKey: ['siteSettings', clientData?.id],
+    queryFn: async () => {
+      if (!clientData?.id) return null;
+
+      const { data, error } = await supabase
+        .from('site_settings')
+        .select('primary_color_1, primary_color_2, primary_color_3')
+        .eq('client_id', clientData.id)
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!clientData?.id
+  });
+
+  // تطبيق ألوان الموقع الديناميكية
+  useEffect(() => {
+    if (siteSettings) {
+      const root = document.documentElement;
+      if (siteSettings.primary_color_1) {
+        root.style.setProperty('--primary', siteSettings.primary_color_1);
+      }
+      if (siteSettings.primary_color_2) {
+        root.style.setProperty('--primary-2', siteSettings.primary_color_2);
+      }
+      if (siteSettings.primary_color_3) {
+        root.style.setProperty('--primary-3', siteSettings.primary_color_3);
+      }
+    }
+  }, [siteSettings]);
+
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
+        if (!clientData?.id) return;
 
         // جلب بيانات الدولة
         const { data: countryData, error: countryError } = await supabase
           .from('countries')
           .select('*')
           .eq('slug', slug)
+          .eq('client_id', clientData.id)
           .single();
 
         if (countryError) throw countryError;
@@ -72,6 +131,7 @@ const CountryDetail = () => {
             .from('universities')
             .select('*')
             .eq('country_id', countryData.id)
+            .eq('client_id', clientData.id)
             .order('world_ranking', { ascending: true });
 
           if (universitiesError) throw universitiesError;
@@ -85,7 +145,7 @@ const CountryDetail = () => {
     };
 
     fetchData();
-  }, [slug]);
+  }, [slug, clientData?.id]);
 
   if (loading) {
     return (
@@ -116,7 +176,13 @@ const CountryDetail = () => {
         <div className="container mx-auto px-4 py-16 text-center">
           <h1 className="text-3xl font-bold mb-4">الدولة غير موجودة</h1>
           <p className="text-muted-foreground">لم يتم العثور على المعلومات المطلوبة</p>
-          <Button asChild className="mt-6">
+          <Button 
+            asChild 
+            className="mt-6"
+            style={{
+              backgroundColor: siteSettings?.primary_color_1 || '#3b82f6'
+            }}
+          >
             <Link to="/countries">
               <ArrowLeft className="mr-2 h-4 w-4" />
               العودة إلى قائمة الدول
@@ -140,7 +206,12 @@ const CountryDetail = () => {
               loading="eager"
             />
           ) : (
-            <div className="w-full h-full bg-gradient-to-br from-primary to-secondary" />
+            <div 
+              className="w-full h-full"
+              style={{
+                background: `linear-gradient(to right, ${siteSettings?.primary_color_1 || '#3b82f6'}, ${siteSettings?.primary_color_2 || '#6366f1'})`
+              }}
+            />
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-transparent" />
 
@@ -162,7 +233,13 @@ const CountryDetail = () => {
                 </div>
 
                 {country.is_trending && (
-                  <Badge className="bg-orange-500 text-white text-base px-4 py-2 hover:bg-orange-600">
+                  <Badge 
+                    className="text-base px-4 py-2 hover:bg-opacity-90"
+                    style={{
+                      backgroundColor: siteSettings?.primary_color_1 || '#3b82f6',
+                      color: 'white'
+                    }}
+                  >
                     <Star className="w-4 h-4 mr-2" />
                     وجهة رائجة للدراسة
                   </Badge>
@@ -180,7 +257,12 @@ const CountryDetail = () => {
               <Card className="border-0 shadow-lg">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-3 text-2xl">
-                    <Globe className="w-6 h-6 text-primary" />
+                    <Globe 
+                      className="w-6 h-6"
+                      style={{
+                        color: siteSettings?.primary_color_1 || '#3b82f6'
+                      }}
+                    />
                     نبذة عن {country.name_ar}
                   </CardTitle>
                 </CardHeader>
@@ -195,7 +277,12 @@ const CountryDetail = () => {
               <Card className="border-0 shadow-lg">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-3 text-2xl">
-                    <Building2 className="w-6 h-6 text-primary" />
+                    <Building2 
+                      className="w-6 h-6"
+                      style={{
+                        color: siteSettings?.primary_color_1 || '#3b82f6'
+                      }}
+                    />
                     أفضل الجامعات في {country.name_ar}
                   </CardTitle>
                 </CardHeader>
@@ -203,7 +290,13 @@ const CountryDetail = () => {
                   {universities.length > 0 ? (
                     <div className="grid md:grid-cols-2 gap-6">
                       {universities.map((university) => (
-                        <Card key={university.id} className="hover:shadow-xl transition-shadow border border-gray-100">
+                        <Card 
+                          key={university.id} 
+                          className="hover:shadow-xl transition-shadow"
+                          style={{
+                            borderColor: siteSettings?.primary_color_1 ? `${siteSettings.primary_color_1}20` : 'rgba(59, 130, 246, 0.1)'
+                          }}
+                        >
                           <CardHeader className="pb-3">
                             <div className="flex items-start justify-between">
                               <div className="flex items-center gap-3">
@@ -214,8 +307,18 @@ const CountryDetail = () => {
                                     className="w-12 h-12 rounded object-cover border"
                                   />
                                 ) : (
-                                  <div className="w-12 h-12 rounded bg-gray-100 flex items-center justify-center">
-                                    <Building2 className="w-6 h-6 text-gray-400" />
+                                  <div 
+                                    className="w-12 h-12 rounded flex items-center justify-center"
+                                    style={{
+                                      backgroundColor: siteSettings?.primary_color_1 ? `${siteSettings.primary_color_1}10` : 'rgba(59, 130, 246, 0.1)'
+                                    }}
+                                  >
+                                    <Building2 
+                                      className="w-6 h-6"
+                                      style={{
+                                        color: siteSettings?.primary_color_1 || '#3b82f6'
+                                      }}
+                                    />
                                   </div>
                                 )}
                                 <div>
@@ -224,7 +327,13 @@ const CountryDetail = () => {
                                 </div>
                               </div>
                               {university.is_featured && (
-                                <Badge variant="secondary" className="bg-orange-100 text-orange-800">
+                                <Badge 
+                                  className="flex items-center"
+                                  style={{
+                                    backgroundColor: siteSettings?.primary_color_1 ? `${siteSettings.primary_color_1}10` : 'rgba(59, 130, 246, 0.1)',
+                                    color: siteSettings?.primary_color_1 || '#3b82f6'
+                                  }}
+                                >
                                   مميزة
                                 </Badge>
                               )}
@@ -234,13 +343,23 @@ const CountryDetail = () => {
                             <div className="space-y-3">
                               {university.world_ranking && (
                                 <div className="flex items-center gap-2 text-sm">
-                                  <Star className="w-4 h-4 text-primary" />
+                                  <Star 
+                                    className="w-4 h-4"
+                                    style={{
+                                      color: siteSettings?.primary_color_1 || '#3b82f6'
+                                    }}
+                                  />
                                   <span>الترتيب العالمي: <strong>#{university.world_ranking}</strong></span>
                                 </div>
                               )}
                               {(university.tuition_fee_min || university.tuition_fee_max) && (
                                 <div className="flex items-center gap-2 text-sm">
-                                  <DollarSign className="w-4 h-4 text-primary" />
+                                  <DollarSign 
+                                    className="w-4 h-4"
+                                    style={{
+                                      color: siteSettings?.primary_color_1 || '#3b82f6'
+                                    }}
+                                  />
                                   <span>الرسوم السنوية: 
                                     {university.tuition_fee_min && (
                                       <strong> ${university.tuition_fee_min.toLocaleString()}</strong>
@@ -253,7 +372,13 @@ const CountryDetail = () => {
                               )}
                             </div>
                             <Button 
-                              className="w-full mt-4 bg-primary hover:bg-primary/90" 
+                              className="w-full mt-4"
+                              style={{
+                                backgroundColor: siteSettings?.primary_color_1 || '#3b82f6',
+                                '&:hover': {
+                                  backgroundColor: siteSettings?.primary_color_2 || '#6366f1'
+                                }
+                              }}
                               onClick={() => navigate(`/universities/${university.slug}`)}
                             >
                               تفاصيل الجامعة
@@ -266,7 +391,14 @@ const CountryDetail = () => {
                     <div className="text-center py-12 border-2 border-dashed rounded-lg">
                       <Building2 className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                       <p className="text-gray-500">لم يتم إضافة جامعات لهذه الدولة بعد</p>
-                      <Button variant="outline" className="mt-4">
+                      <Button 
+                        variant="outline" 
+                        className="mt-4"
+                        style={{
+                          borderColor: siteSettings?.primary_color_1 || '#3b82f6',
+                          color: siteSettings?.primary_color_1 || '#3b82f6'
+                        }}
+                      >
                         اقترح جامعة
                       </Button>
                     </div>
@@ -284,9 +416,19 @@ const CountryDetail = () => {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {country.language && (
-                    <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                      <div className="bg-primary/10 p-2 rounded-full">
-                        <Globe className="w-5 h-5 text-primary" />
+                    <div className="flex items-start gap-3 p-3 rounded-lg" style={{ backgroundColor: siteSettings?.primary_color_1 ? `${siteSettings.primary_color_1}05` : 'rgba(59, 130, 246, 0.05)' }}>
+                      <div 
+                        className="p-2 rounded-full"
+                        style={{
+                          backgroundColor: siteSettings?.primary_color_1 ? `${siteSettings.primary_color_1}10` : 'rgba(59, 130, 246, 0.1)'
+                        }}
+                      >
+                        <Globe 
+                          className="w-5 h-5"
+                          style={{
+                            color: siteSettings?.primary_color_1 || '#3b82f6'
+                          }}
+                        />
                       </div>
                       <div>
                         <p className="font-semibold">اللغة الرسمية</p>
@@ -296,9 +438,19 @@ const CountryDetail = () => {
                   )}
 
                   {country.currency && (
-                    <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                      <div className="bg-primary/10 p-2 rounded-full">
-                        <DollarSign className="w-5 h-5 text-primary" />
+                    <div className="flex items-start gap-3 p-3 rounded-lg" style={{ backgroundColor: siteSettings?.primary_color_1 ? `${siteSettings.primary_color_1}05` : 'rgba(59, 130, 246, 0.05)' }}>
+                      <div 
+                        className="p-2 rounded-full"
+                        style={{
+                          backgroundColor: siteSettings?.primary_color_1 ? `${siteSettings.primary_color_1}10` : 'rgba(59, 130, 246, 0.1)'
+                        }}
+                      >
+                        <DollarSign 
+                          className="w-5 h-5"
+                          style={{
+                            color: siteSettings?.primary_color_1 || '#3b82f6'
+                          }}
+                        />
                       </div>
                       <div>
                         <p className="font-semibold">العملة</p>
@@ -308,9 +460,19 @@ const CountryDetail = () => {
                   )}
 
                   {country.climate && (
-                    <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                      <div className="bg-primary/10 p-2 rounded-full">
-                        <Clock className="w-5 h-5 text-primary" />
+                    <div className="flex items-start gap-3 p-3 rounded-lg" style={{ backgroundColor: siteSettings?.primary_color_1 ? `${siteSettings.primary_color_1}05` : 'rgba(59, 130, 246, 0.05)' }}>
+                      <div 
+                        className="p-2 rounded-full"
+                        style={{
+                          backgroundColor: siteSettings?.primary_color_1 ? `${siteSettings.primary_color_1}10` : 'rgba(59, 130, 246, 0.1)'
+                        }}
+                      >
+                        <Clock 
+                          className="w-5 h-5"
+                          style={{
+                            color: siteSettings?.primary_color_1 || '#3b82f6'
+                          }}
+                        />
                       </div>
                       <div>
                         <p className="font-semibold">المناخ</p>
@@ -329,9 +491,19 @@ const CountryDetail = () => {
                   </CardHeader>
                   <CardContent className="space-y-4">
                     {country.study_cost_min && (
-                      <div className="bg-blue-50 p-4 rounded-lg">
+                      <div 
+                        className="p-4 rounded-lg"
+                        style={{
+                          backgroundColor: siteSettings?.primary_color_1 ? `${siteSettings.primary_color_1}05` : 'rgba(59, 130, 246, 0.05)'
+                        }}
+                      >
                         <p className="font-semibold mb-1 text-gray-700">تكلفة الدراسة السنوية</p>
-                        <p className="text-2xl font-bold text-blue-600">
+                        <p 
+                          className="text-2xl font-bold"
+                          style={{
+                            color: siteSettings?.primary_color_1 || '#3b82f6'
+                          }}
+                        >
                           ${country.study_cost_min.toLocaleString()}
                           {country.study_cost_max && ` - $${country.study_cost_max.toLocaleString()}`}
                         </p>
@@ -340,9 +512,19 @@ const CountryDetail = () => {
                     )}
 
                     {country.living_cost_min && (
-                      <div className="bg-green-50 p-4 rounded-lg">
+                      <div 
+                        className="p-4 rounded-lg"
+                        style={{
+                          backgroundColor: siteSettings?.primary_color_2 ? `${siteSettings.primary_color_2}05` : 'rgba(99, 102, 241, 0.05)'
+                        }}
+                      >
                         <p className="font-semibold mb-1 text-gray-700">تكلفة المعيشة السنوية</p>
-                        <p className="text-2xl font-bold text-green-600">
+                        <p 
+                          className="text-2xl font-bold"
+                          style={{
+                            color: siteSettings?.primary_color_2 || '#6366f1'
+                          }}
+                        >
                           ${country.living_cost_min.toLocaleString()}
                           {country.living_cost_max && ` - $${country.living_cost_max.toLocaleString()}`}
                         </p>
@@ -365,9 +547,18 @@ const CountryDetail = () => {
                         <Badge 
                           key={index} 
                           variant="outline" 
-                          className="text-sm px-3 py-1 border-gray-200 bg-white"
+                          className="text-sm px-3 py-1"
+                          style={{
+                            borderColor: siteSettings?.primary_color_1 ? `${siteSettings.primary_color_1}30` : 'rgba(59, 130, 246, 0.2)',
+                            backgroundColor: siteSettings?.primary_color_1 ? `${siteSettings.primary_color_1}05` : 'rgba(59, 130, 246, 0.05)'
+                          }}
                         >
-                          <MapPin className="w-3 h-3 mr-1 text-primary" />
+                          <MapPin 
+                            className="w-3 h-3 mr-1"
+                            style={{
+                              color: siteSettings?.primary_color_1 || '#3b82f6'
+                            }}
+                          />
                           {city}
                         </Badge>
                       ))}
@@ -383,10 +574,24 @@ const CountryDetail = () => {
                     <CardTitle className="text-xl">متطلبات التأشيرة</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="bg-orange-50 p-4 rounded-lg">
+                    <div 
+                      className="p-4 rounded-lg"
+                      style={{
+                        backgroundColor: siteSettings?.primary_color_1 ? `${siteSettings.primary_color_1}05` : 'rgba(59, 130, 246, 0.05)'
+                      }}
+                    >
                       <p className="text-sm text-gray-700">{country.visa_requirements_ar}</p>
                     </div>
-                    <Button className="w-full mt-4 bg-orange-500 hover:bg-orange-600" onClick={()=>navigate("/contact")}>
+                    <Button 
+                      className="w-full mt-4"
+                      style={{
+                        backgroundColor: siteSettings?.primary_color_1 || '#3b82f6',
+                        '&:hover': {
+                          backgroundColor: siteSettings?.primary_color_2 || '#6366f1'
+                        }
+                      }}
+                      onClick={()=>navigate("/contact")}
+                    >
                       استشارة تأشيرة مجانية
                     </Button>
                   </CardContent>
@@ -394,9 +599,22 @@ const CountryDetail = () => {
               )}
 
               {/* Back Button */}
-              <Button variant="outline" className="w-full" asChild>
+              <Button 
+                variant="outline" 
+                className="w-full" 
+                asChild
+                style={{
+                  borderColor: siteSettings?.primary_color_1 || '#3b82f6',
+                  color: siteSettings?.primary_color_1 || '#3b82f6'
+                }}
+              >
                 <Link to="/countries">
-                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  <ArrowLeft 
+                    className="w-4 h-4 mr-2"
+                    style={{
+                      color: siteSettings?.primary_color_1 || '#3b82f6'
+                    }}
+                  />
                   العودة إلى قائمة الدول
                 </Link>
               </Button>

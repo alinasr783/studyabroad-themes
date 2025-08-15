@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -56,22 +57,48 @@ const AdminSettings = () => {
     show_testimonials_section: true,
   });
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
-    fetchSettings();
-  }, []);
+    const checkSessionAndFetchData = async () => {
+      try {
+        const session = localStorage.getItem("manager_session");
+        if (!session) {
+          navigate("/admin/login");
+          return;
+        }
 
-  const getClientId = () => {
-    const session = localStorage.getItem("manager_session");
-    return session ? JSON.parse(session).client_id : null;
-  };
+        const sessionData = JSON.parse(session);
+        if (!sessionData.client_id) {
+          throw new Error("بيانات الجلسة غير صالحة");
+        }
 
-  const fetchSettings = async () => {
+        // التحقق من أن الجلسة لم تنتهي (30 دقيقة)
+        const sessionAge = Date.now() - (sessionData.timestamp || 0);
+        if (sessionAge > 30 * 60 * 1000) {
+          localStorage.removeItem("manager_session");
+          navigate("/admin/login");
+          return;
+        }
+
+        await fetchSettings(sessionData.client_id);
+      } catch (err) {
+        console.error("Error initializing settings:", err);
+        setError(err instanceof Error ? err.message : "حدث خطأ غير متوقع");
+        setLoading(false);
+      }
+    };
+
+    checkSessionAndFetchData();
+  }, [navigate]);
+
+  const fetchSettings = async (clientId: string) => {
     try {
-      const clientId = getClientId();
-      if (!clientId) return;
+      setLoading(true);
+      setError(null);
 
       const { data, error } = await supabase
         .from("site_settings")
@@ -89,9 +116,10 @@ const AdminSettings = () => {
       }
     } catch (error) {
       console.error("Error fetching settings:", error);
+      setError("حدث خطأ أثناء تحميل الإعدادات");
       toast({
         title: "خطأ",
-        description: "حدث خطأ أثناء تحميل الإعدادات",
+        description: "حدث خطأ أثناء تحميل إعدادات الموقع",
         variant: "destructive",
       });
     } finally {
@@ -124,17 +152,22 @@ const AdminSettings = () => {
   const handleSave = async () => {
     try {
       setSaving(true);
-      const clientId = getClientId();
-      if (!clientId) return;
+      const session = localStorage.getItem("manager_session");
+      if (!session) {
+        navigate("/admin/login");
+        return;
+      }
 
-      const settingsData = { ...settings, client_id: clientId };
+      const { client_id } = JSON.parse(session);
+      const settingsData = { ...settings, client_id };
 
       if (settings.id) {
         const { error } = await supabase
           .from("site_settings")
           .update(settingsData)
-          .eq("id", settings.id);
-        
+          .eq("id", settings.id)
+          .eq("client_id", client_id);
+
         if (error) throw error;
       } else {
         const { data, error } = await supabase
@@ -142,7 +175,7 @@ const AdminSettings = () => {
           .insert(settingsData)
           .select()
           .single();
-        
+
         if (error) throw error;
         setSettings(data);
       }
@@ -168,6 +201,19 @@ const AdminSettings = () => {
       <AdminLayout>
         <div className="flex items-center justify-center h-64">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <AdminLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center text-red-500">
+            <p className="font-bold">خطأ!</p>
+            <p>{error}</p>
+          </div>
         </div>
       </AdminLayout>
     );

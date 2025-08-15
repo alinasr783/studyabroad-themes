@@ -7,6 +7,7 @@ import { Eye, Mail, Phone } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import AdminLayout from "@/components/admin/AdminLayout";
+import { useNavigate } from "react-router-dom";
 
 interface Consultation {
   id: string;
@@ -27,21 +28,47 @@ interface Consultation {
 const AdminConsultations = () => {
   const [consultations, setConsultations] = useState<Consultation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
-    fetchConsultations();
-  }, []);
+    const checkSessionAndFetchData = async () => {
+      try {
+        const session = localStorage.getItem("manager_session");
+        if (!session) {
+          navigate("/admin/login");
+          return;
+        }
 
-  const getClientId = () => {
-    const session = localStorage.getItem("manager_session");
-    return session ? JSON.parse(session).client_id : null;
-  };
+        const sessionData = JSON.parse(session);
+        if (!sessionData.client_id) {
+          throw new Error("بيانات الجلسة غير صالحة");
+        }
 
-  const fetchConsultations = async () => {
+        // التحقق من أن الجلسة لم تنتهي (30 دقيقة)
+        const sessionAge = Date.now() - (sessionData.timestamp || 0);
+        if (sessionAge > 30 * 60 * 1000) {
+          localStorage.removeItem("manager_session");
+          navigate("/admin/login");
+          return;
+        }
+
+        await fetchConsultations(sessionData.client_id);
+      } catch (err) {
+        console.error("Error initializing consultations:", err);
+        setError(err instanceof Error ? err.message : "حدث خطأ غير متوقع");
+        setLoading(false);
+      }
+    };
+
+    checkSessionAndFetchData();
+  }, [navigate]);
+
+  const fetchConsultations = async (clientId: string) => {
     try {
-      const clientId = getClientId();
-      if (!clientId) return;
+      setLoading(true);
+      setError(null);
 
       const { data, error } = await supabase
         .from("consultations")
@@ -53,9 +80,10 @@ const AdminConsultations = () => {
       setConsultations(data || []);
     } catch (error) {
       console.error("Error fetching consultations:", error);
+      setError("حدث خطأ أثناء تحميل البيانات");
       toast({
         title: "خطأ",
-        description: "حدث خطأ أثناء تحميل البيانات",
+        description: "حدث خطأ أثناء تحميل طلبات الاستشارة",
         variant: "destructive",
       });
     } finally {
@@ -77,7 +105,12 @@ const AdminConsultations = () => {
         description: "تم تحديث حالة الطلب بنجاح",
       });
 
-      fetchConsultations();
+      // إعادة تحميل البيانات بعد التحديث
+      const session = localStorage.getItem("manager_session");
+      if (session) {
+        const { client_id } = JSON.parse(session);
+        await fetchConsultations(client_id);
+      }
     } catch (error) {
       console.error("Error updating status:", error);
       toast({
@@ -93,9 +126,11 @@ const AdminConsultations = () => {
       case "pending":
         return <Badge variant="secondary">قيد الانتظار</Badge>;
       case "contacted":
-        return <Badge variant="default">تم التواصل</Badge>;
+        return <Badge className="bg-blue-500 hover:bg-blue-600">تم التواصل</Badge>;
       case "completed":
         return <Badge variant="outline">مكتمل</Badge>;
+      case "cancelled":
+        return <Badge variant="destructive">ملغى</Badge>;
       default:
         return <Badge variant="secondary">{status}</Badge>;
     }
@@ -121,6 +156,19 @@ const AdminConsultations = () => {
     );
   }
 
+  if (error) {
+    return (
+      <AdminLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center text-red-500">
+            <p className="font-bold">خطأ!</p>
+            <p>{error}</p>
+          </div>
+        </div>
+      </AdminLayout>
+    );
+  }
+
   return (
     <AdminLayout>
       <div className="space-y-6">
@@ -137,14 +185,14 @@ const AdminConsultations = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>الاسم</TableHead>
+                  <TableHead className="w-[150px]">الاسم</TableHead>
                   <TableHead>معلومات التواصل</TableHead>
                   <TableHead>تفضيلات الدراسة</TableHead>
                   <TableHead>الميزانية</TableHead>
                   <TableHead>الموعد المفضل</TableHead>
-                  <TableHead>الحالة</TableHead>
-                  <TableHead>تاريخ التقديم</TableHead>
-                  <TableHead>الإجراءات</TableHead>
+                  <TableHead className="w-[120px]">الحالة</TableHead>
+                  <TableHead className="w-[180px]">تاريخ التقديم</TableHead>
+                  <TableHead className="w-[150px]">الإجراءات</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -200,10 +248,17 @@ const AdminConsultations = () => {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="flex gap-1">
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => navigate(`/admin/consultations/${consultation.id}`)}
+                        >
+                          <Eye className="w-4 h-4 mr-1" />
+                          عرض
+                        </Button>
                         {consultation.status === "pending" && (
                           <Button
-                            variant="outline"
                             size="sm"
                             onClick={() => updateStatus(consultation.id, "contacted")}
                           >
@@ -212,11 +267,11 @@ const AdminConsultations = () => {
                         )}
                         {consultation.status === "contacted" && (
                           <Button
-                            variant="outline"
+                            variant="secondary"
                             size="sm"
                             onClick={() => updateStatus(consultation.id, "completed")}
                           >
-                            مكتمل
+                            إكمال
                           </Button>
                         )}
                       </div>
@@ -225,7 +280,7 @@ const AdminConsultations = () => {
                 ))}
               </TableBody>
             </Table>
-            
+
             {consultations.length === 0 && (
               <div className="text-center py-8">
                 <p className="text-muted-foreground">لا توجد طلبات استشارة حتى الآن</p>

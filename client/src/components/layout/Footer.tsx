@@ -1,9 +1,12 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useForm } from "react-hook-form";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import { 
   GraduationCap, 
-  Globe, 
   Phone, 
   Mail, 
   MapPin,
@@ -12,10 +15,152 @@ import {
   Instagram,
   Linkedin,
   Youtube,
+  MessageSquare,
   Crown
 } from "lucide-react";
+import { Send as Snapchat } from "lucide-react";
+import { useEffect } from "react";
+
+// نوع بيانات معلومات التواصل
+interface ContactInfo {
+  id: string;
+  title?: string;
+  description?: string;
+  phone_numbers: string[];
+  email_addresses: string[];
+  address?: string;
+  working_hours?: string;
+  whatsapp_title?: string;
+  whatsapp_description?: string;
+  whatsapp_number?: string;
+  map_placeholder?: string;
+  map_link?: string;
+  social_links: {
+    facebook: string;
+    twitter: string;
+    instagram: string;
+    linkedin: string;
+    youtube: string;
+    tiktok: string;
+    snapchat: string;
+  };
+  newsletter_title?: string;
+  newsletter_description?: string;
+}
+
+// نوع بيانات إعدادات الموقع
+interface SiteSettings {
+  id: string;
+  site_name_ar: string;
+  site_name_en: string;
+  logo_url: string;
+  tagline_ar?: string;
+  tagline_en?: string;
+  primary_color_1?: string;
+  primary_color_2?: string;
+  primary_color_3?: string;
+}
+
+// نوع بيانات نموذج النشرة الإخبارية
+interface NewsletterFormData {
+  email: string;
+}
 
 const Footer = () => {
+  // الحصول على client_id بناءً على النطاق
+  const { data: clientData } = useQuery({
+    queryKey: ['clientInfo'],
+    queryFn: async () => {
+      const domain = window.location.hostname;
+      const { data, error } = await supabase
+        .from('clients')
+        .select('id')
+        .eq('domain', domain)
+        .single();
+
+      if (error) throw error;
+      return data;
+    }
+  });
+
+  // جلب بيانات التواصل من Supabase بناءً على client_id
+  const { data: contactInfo } = useQuery<ContactInfo>({
+    queryKey: ['contactInfo', clientData?.id],
+    queryFn: async () => {
+      if (!clientData?.id) return null;
+
+      const { data, error } = await supabase
+        .from('contact_info')
+        .select('*')
+        .eq('client_id', clientData.id)
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!clientData?.id
+  });
+
+  // جلب إعدادات الموقع من Supabase بناءً على client_id
+  const { data: siteSettings } = useQuery<SiteSettings>({
+    queryKey: ['siteSettings', clientData?.id],
+    queryFn: async () => {
+      if (!clientData?.id) return null;
+
+      const { data, error } = await supabase
+        .from('site_settings')
+        .select('*')
+        .eq('client_id', clientData.id)
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!clientData?.id
+  });
+
+  // تطبيق ألوان الموقع الديناميكية
+  useEffect(() => {
+    if (siteSettings) {
+      const root = document.documentElement;
+      if (siteSettings.primary_color_1) {
+        root.style.setProperty('--primary', siteSettings.primary_color_1);
+      }
+      if (siteSettings.primary_color_2) {
+        root.style.setProperty('--primary-2', siteSettings.primary_color_2);
+      }
+      if (siteSettings.primary_color_3) {
+        root.style.setProperty('--primary-3', siteSettings.primary_color_3);
+      }
+    }
+  }, [siteSettings]);
+
+  // إعداد نموذج النشرة الإخبارية
+  const { register, handleSubmit, reset } = useForm<NewsletterFormData>();
+
+  // معالجة الاشتراك في النشرة الإخبارية
+  const newsletterMutation = useMutation({
+    mutationFn: async (email: string) => {
+      const { error } = await supabase
+        .from('newsletter_subscribers')
+        .insert({ email, client_id: clientData?.id });
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success('تم الاشتراك بنجاح! شكراً لتسجيلك معنا.');
+      reset();
+    },
+    onError: (error) => {
+      toast.error('حدث خطأ أثناء الاشتراك. يرجى المحاولة مرة أخرى.');
+      console.error('Newsletter subscription error:', error);
+    }
+  });
+
+  const onSubmit = (data: NewsletterFormData) => {
+    newsletterMutation.mutate(data.email);
+  };
+
   const quickLinks = [
     { name: "الرئيسية", href: "/" },
     { name: "الدول", href: "/countries" },
@@ -30,13 +175,26 @@ const Footer = () => {
     { name: "تواصل معنا", href: "/contact" },
   ];
 
+  // روابط التواصل الاجتماعي مع الأيقونات المناسبة
   const socialLinks = [
-    { icon: Facebook, href: "#", label: "Facebook" },
-    { icon: Twitter, href: "#", label: "Twitter" },
-    { icon: Instagram, href: "#", label: "Instagram" },
-    { icon: Linkedin, href: "#", label: "LinkedIn" },
-    { icon: Youtube, href: "#", label: "YouTube" },
+    { icon: Facebook, key: 'facebook', label: 'Facebook' },
+    { icon: Twitter, key: 'twitter', label: 'Twitter' },
+    { icon: Instagram, key: 'instagram', label: 'Instagram' },
+    { icon: Linkedin, key: 'linkedin', label: 'LinkedIn' },
+    { icon: Youtube, key: 'youtube', label: 'YouTube' },
+    { icon: MessageSquare, key: 'tiktok', label: 'TikTok' },
+    { icon: Snapchat, key: 'snapchat', label: 'Snapchat' },
   ];
+
+  // إنشاء ستايل ديناميكي للألوان
+  const getGradientStyle = () => {
+    if (!siteSettings) return {};
+
+    return {
+      background: `linear-gradient(to right, ${siteSettings.primary_color_1 || '#3b82f6'}, ${siteSettings.primary_color_2 || '#6366f1'})`,
+      backgroundImage: `linear-gradient(to right, ${siteSettings.primary_color_1 || '#3b82f6'}, ${siteSettings.primary_color_2 || '#6366f1'})`
+    };
+  };
 
   return (
     <footer className="bg-background border-t">
@@ -46,33 +204,56 @@ const Footer = () => {
           {/* معلومات الشركة */}
           <div className="space-y-4">
             <Link to="/" className="flex items-center gap-3">
-              <div className="flex items-center justify-center w-10 h-10 bg-gradient-to-br from-primary to-secondary rounded-lg">
-                <GraduationCap className="h-6 w-6 text-white" />
-              </div>
+              {siteSettings?.logo_url ? (
+                <img 
+                  src={siteSettings.logo_url} 
+                  alt="Logo" 
+                  className="w-10 h-10 object-contain"
+                />
+              ) : (
+                <div 
+                  className="flex items-center justify-center w-10 h-10 rounded-lg"
+                  style={{
+                    background: `linear-gradient(to right, ${siteSettings?.primary_color_1 || '#3b82f6'}, ${siteSettings?.primary_color_2 || '#6366f1'})`
+                  }}
+                >
+                  <GraduationCap className="h-6 w-6 text-white" />
+                </div>
+              )}
               <div className="flex flex-col">
-                <span className="font-bold text-lg">Study Abroad</span>
-                <span className="text-sm text-muted-foreground">دليلك للدراسة في الخارج</span>
+                <span className="font-bold text-lg">
+                  {siteSettings?.site_name_ar || 'Study Abroad'}
+                </span>
+                <span className="text-sm text-muted-foreground">
+                  {siteSettings?.tagline_ar || 'دليلك للدراسة في الخارج'}
+                </span>
               </div>
             </Link>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              نوفر لك أحدث المعلومات عن الجامعات والبرامج الدراسية حول العالم لمساعدتك في رحلتك التعليمية.
+              {contactInfo?.description || 'نوفر لك أحدث المعلومات عن الجامعات والبرامج الدراسية حول العالم لمساعدتك في رحلتك التعليمية.'}
             </p>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               {socialLinks.map((social) => {
                 const Icon = social.icon;
-                return (
+                const link = contactInfo?.social_links?.[social.key as keyof typeof contactInfo.social_links];
+                return link ? (
                   <Button
-                    key={social.label}
+                    key={social.key}
                     variant="outline"
                     size="icon"
                     className="h-9 w-9 rounded-full hover:bg-primary hover:text-white transition-colors"
                     asChild
                   >
-                    <a href={social.href} aria-label={social.label}>
+                    <a 
+                      href={link} 
+                      aria-label={social.label}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
                       <Icon className="h-4 w-4" />
                     </a>
                   </Button>
-                );
+                ) : null;
               })}
             </div>
           </div>
@@ -119,43 +300,64 @@ const Footer = () => {
             <div className="space-y-3">
               <div className="flex items-center gap-3 text-sm text-muted-foreground">
                 <Phone className="h-4 w-4 text-primary flex-shrink-0" />
-                <span>+966 50 123 4567</span>
+                <div>
+                  {contactInfo?.phone_numbers?.map((phone, index) => (
+                    <div key={index}>{phone}</div>
+                  )) || 'لم يتم تحديد رقم هاتف'}
+                </div>
               </div>
               <div className="flex items-center gap-3 text-sm text-muted-foreground">
                 <Mail className="h-4 w-4 text-primary flex-shrink-0" />
-                <span>info@studyabroad.com</span>
+                <div>
+                  {contactInfo?.email_addresses?.map((email, index) => (
+                    <div key={index}>{email}</div>
+                  )) || 'info@example.com'}
+                </div>
               </div>
               <div className="flex items-center gap-3 text-sm text-muted-foreground">
                 <MapPin className="h-4 w-4 text-primary flex-shrink-0" />
-                <span>الرياض، المملكة العربية السعودية</span>
+                <span>{contactInfo?.address || 'الرياض، المملكة العربية السعودية'}</span>
               </div>
             </div>
 
-            <div className="space-y-3">
-              <h4 className="font-medium">النشرة الإخبارية</h4>
-              <form className="flex flex-col sm:flex-row gap-2">
+            {/* قسم النشرة الإخبارية */}
+            {/* <div className="space-y-3">
+              <h4 className="font-medium">{contactInfo?.newsletter_title || 'النشرة الإخبارية'}</h4>
+              <p className="text-sm text-muted-foreground">
+                {contactInfo?.newsletter_description || 'اشترك في نشرتنا البريدية لتصلك آخر العروض والأخبار'}
+              </p>
+              <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col sm:flex-row gap-2">
                 <Input 
                   type="email" 
                   placeholder="بريدك الإلكتروني" 
                   className="flex-1 text-sm"
                   required
+                  {...register("email", { 
+                    required: true,
+                    pattern: {
+                      value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                      message: "بريد إلكتروني غير صالح"
+                    }
+                  })}
+                  disabled={newsletterMutation.isPending}
                 />
                 <Button 
                   size="sm" 
-                  className="bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90"
+                  style={getGradientStyle()}
                   type="submit"
+                  disabled={newsletterMutation.isPending}
                 >
-                  اشترك
+                  {newsletterMutation.isPending ? 'جاري الإرسال...' : 'اشترك'}
                 </Button>
               </form>
-            </div>
+            </div> */}
           </div>
         </div>
 
         {/* حقوق النشر */}
         <div className="border-t mt-8 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-sm text-muted-foreground text-center md:text-start">
-            © {new Date().getFullYear()} Study Abroad. جميع الحقوق محفوظة.
+            © {new Date().getFullYear()} {siteSettings?.site_name_ar || 'Study Abroad'}. جميع الحقوق محفوظة.
           </p>
           <div className="flex flex-wrap justify-center gap-4">
             <Link to="/privacy" className="text-sm text-muted-foreground hover:text-primary transition-colors">

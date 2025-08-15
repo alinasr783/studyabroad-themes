@@ -19,6 +19,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useQuery } from "@tanstack/react-query";
 
 interface Country {
   id: string;
@@ -49,6 +50,12 @@ interface University {
   country_id?: string;
 }
 
+interface SiteSettings {
+  primary_color_1?: string;
+  primary_color_2?: string;
+  primary_color_3?: string;
+}
+
 const UniversitiesPage = () => {
   const [countries, setCountries] = useState<Country[]>([]);
   const [universities, setUniversities] = useState<University[]>([]);
@@ -59,16 +66,68 @@ const UniversitiesPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const navigate = useNavigate();
 
+  // الحصول على client_id بناءً على النطاق
+  const { data: clientData } = useQuery({
+    queryKey: ['clientInfo'],
+    queryFn: async () => {
+      const domain = window.location.hostname;
+      const { data, error } = await supabase
+        .from('clients')
+        .select('id')
+        .eq('domain', domain)
+        .single();
+
+      if (error) throw error;
+      return data;
+    }
+  });
+
+  // جلب إعدادات الموقع من Supabase بناءً على client_id
+  const { data: siteSettings } = useQuery<SiteSettings>({
+    queryKey: ['siteSettings', clientData?.id],
+    queryFn: async () => {
+      if (!clientData?.id) return null;
+
+      const { data, error } = await supabase
+        .from('site_settings')
+        .select('primary_color_1, primary_color_2, primary_color_3')
+        .eq('client_id', clientData.id)
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!clientData?.id
+  });
+
+  // تطبيق ألوان الموقع الديناميكية
+  useEffect(() => {
+    if (siteSettings) {
+      const root = document.documentElement;
+      if (siteSettings.primary_color_1) {
+        root.style.setProperty('--primary', siteSettings.primary_color_1);
+      }
+      if (siteSettings.primary_color_2) {
+        root.style.setProperty('--primary-2', siteSettings.primary_color_2);
+      }
+      if (siteSettings.primary_color_3) {
+        root.style.setProperty('--primary-3', siteSettings.primary_color_3);
+      }
+    }
+  }, [siteSettings]);
+
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
         setError(null);
+        if (!clientData?.id) return;
 
         // Fetch countries
         const { data: countriesData, error: countriesError } = await supabase
           .from('countries')
           .select('id, name_ar, name_en, flag_url')
+          .eq('client_id', clientData.id)
           .order('name_ar');
 
         if (countriesError) throw countriesError;
@@ -77,6 +136,7 @@ const UniversitiesPage = () => {
         const { data: universitiesData, error: universitiesError } = await supabase
           .from('universities')
           .select('*')
+          .eq('client_id', clientData.id)
           .order('name_ar');
 
         if (universitiesError) throw universitiesError;
@@ -94,7 +154,7 @@ const UniversitiesPage = () => {
     };
 
     fetchData();
-  }, []);
+  }, [clientData?.id]);
 
   useEffect(() => {
     // Filter universities based on search and selected country
@@ -134,11 +194,21 @@ const UniversitiesPage = () => {
     return date.toLocaleDateString('ar-EG');
   };
 
+  // إنشاء ستايل ديناميكي للألوان
+  const getGradientStyle = () => {
+    if (!siteSettings) return {};
+
+    return {
+      background: `linear-gradient(to right, ${siteSettings.primary_color_1 || '#3b82f6'}, ${siteSettings.primary_color_2 || '#6366f1'})`,
+      backgroundImage: `linear-gradient(to right, ${siteSettings.primary_color_1 || '#3b82f6'}, ${siteSettings.primary_color_2 || '#6366f1'})`
+    };
+  };
+
   if (loading) {
     return (
       <Layout>
         <div className="min-h-screen">
-          <section className="relative h-[40vh] min-h-[300px] overflow-hidden bg-gradient-to-br from-primary to-secondary">
+          <section className="relative h-[40vh] min-h-[300px] overflow-hidden" style={getGradientStyle()}>
             <div className="absolute inset-0 flex items-center">
               <div className="container mx-auto px-4 text-center">
                 <Skeleton className="h-10 w-3/4 mx-auto mb-4" />
@@ -196,7 +266,7 @@ const UniversitiesPage = () => {
     <Layout>
       <div className="min-h-screen">
         {/* Hero Section */}
-        <section className="relative h-[40vh] min-h-[300px] overflow-hidden bg-gradient-to-br from-primary to-secondary">
+        <section className="relative h-[40vh] min-h-[300px] overflow-hidden" style={getGradientStyle()}>
           <div className="absolute inset-0 flex items-center">
             <div className="container mx-auto px-4 text-center">
               <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">أفضل الجامعات حول العالم</h1>
@@ -247,6 +317,10 @@ const UniversitiesPage = () => {
                   variant={selectedCountry === country.id ? "default" : "outline"}
                   className="flex items-center gap-2"
                   onClick={() => setSelectedCountry(selectedCountry === country.id ? null : country.id)}
+                  style={selectedCountry === country.id ? {
+                    backgroundColor: siteSettings?.primary_color_1 || '#3b82f6',
+                    borderColor: siteSettings?.primary_color_1 || '#3b82f6'
+                  } : {}}
                 >
                   {country.flag_url ? (
                     <img 
@@ -278,7 +352,11 @@ const UniversitiesPage = () => {
                 </span>
               </h2>
               {selectedCountry && (
-                <Button variant="ghost" onClick={() => setSelectedCountry(null)}>
+                <Button 
+                  variant="ghost" 
+                  onClick={() => setSelectedCountry(null)}
+                  style={{ color: siteSettings?.primary_color_1 || '#3b82f6' }}
+                >
                   عرض كل الجامعات
                 </Button>
               )}
@@ -332,7 +410,10 @@ const UniversitiesPage = () => {
                     <CardContent>
                       <div className="flex flex-wrap gap-2 mb-4">
                         {university.is_featured && (
-                          <Badge className="bg-accent text-accent-foreground">
+                          <Badge 
+                            className="text-accent-foreground"
+                            style={{ backgroundColor: siteSettings?.primary_color_1 || '#3b82f6' }}
+                          >
                             <Star className="w-3 h-3 mr-1" /> مميزة
                           </Badge>
                         )}
@@ -346,31 +427,34 @@ const UniversitiesPage = () => {
                       <div className="grid grid-cols-2 gap-4 mb-4">
                         {university.tuition_fee_min && (
                           <div className="flex items-center gap-2 text-sm">
-                            <DollarSign className="w-4 h-4 text-primary" />
+                            <DollarSign className="w-4 h-4" style={{ color: siteSettings?.primary_color_1 || '#3b82f6' }} />
                             <span>الرسوم: ${university.tuition_fee_min.toLocaleString()}</span>
                           </div>
                         )}
                         {university.student_count && (
                           <div className="flex items-center gap-2 text-sm">
-                            <Users className="w-4 h-4 text-primary" />
+                            <Users className="w-4 h-4" style={{ color: siteSettings?.primary_color_1 || '#3b82f6' }} />
                             <span>الطلاب: {university.student_count.toLocaleString()}</span>
                           </div>
                         )}
                         {university.acceptance_rate && (
                           <div className="flex items-center gap-2 text-sm">
-                            <GraduationCap className="w-4 h-4 text-primary" />
+                            <GraduationCap className="w-4 h-4" style={{ color: siteSettings?.primary_color_1 || '#3b82f6' }} />
                             <span>القبول: {(university.acceptance_rate * 100).toFixed(1)}%</span>
                           </div>
                         )}
                         {university.application_deadline && (
                           <div className="flex items-center gap-2 text-sm">
-                            <Calendar className="w-4 h-4 text-primary" />
+                            <Calendar className="w-4 h-4" style={{ color: siteSettings?.primary_color_1 || '#3b82f6' }} />
                             <span>آخر موعد: {formatDate(university.application_deadline)}</span>
                           </div>
                         )}
                       </div>
 
-                      <Button className="w-full">
+                      <Button 
+                        className="w-full"
+                        style={getGradientStyle()}
+                      >
                         عرض التفاصيل
                       </Button>
                     </CardContent>
@@ -392,6 +476,7 @@ const UniversitiesPage = () => {
                   <Button 
                     variant="ghost" 
                     className="mt-4"
+                    style={{ color: siteSettings?.primary_color_1 || '#3b82f6' }}
                     onClick={() => {
                       setSelectedCountry(null);
                       setSearchQuery("");

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -22,21 +23,47 @@ interface ContactMessage {
 const AdminMessages = () => {
   const [messages, setMessages] = useState<ContactMessage[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
-    fetchMessages();
-  }, []);
+    const checkSessionAndFetchData = async () => {
+      try {
+        const session = localStorage.getItem("manager_session");
+        if (!session) {
+          navigate("/admin/login");
+          return;
+        }
 
-  const getClientId = () => {
-    const session = localStorage.getItem("manager_session");
-    return session ? JSON.parse(session).client_id : null;
-  };
+        const sessionData = JSON.parse(session);
+        if (!sessionData.client_id) {
+          throw new Error("بيانات الجلسة غير صالحة");
+        }
 
-  const fetchMessages = async () => {
+        // التحقق من أن الجلسة لم تنتهي (30 دقيقة)
+        const sessionAge = Date.now() - (sessionData.timestamp || 0);
+        if (sessionAge > 30 * 60 * 1000) {
+          localStorage.removeItem("manager_session");
+          navigate("/admin/login");
+          return;
+        }
+
+        await fetchMessages(sessionData.client_id);
+      } catch (err) {
+        console.error("Error initializing messages:", err);
+        setError(err instanceof Error ? err.message : "حدث خطأ غير متوقع");
+        setLoading(false);
+      }
+    };
+
+    checkSessionAndFetchData();
+  }, [navigate]);
+
+  const fetchMessages = async (clientId: string) => {
     try {
-      const clientId = getClientId();
-      if (!clientId) return;
+      setLoading(true);
+      setError(null);
 
       const { data, error } = await supabase
         .from("contact_messages")
@@ -48,9 +75,10 @@ const AdminMessages = () => {
       setMessages(data || []);
     } catch (error) {
       console.error("Error fetching messages:", error);
+      setError("حدث خطأ أثناء تحميل الرسائل");
       toast({
         title: "خطأ",
-        description: "حدث خطأ أثناء تحميل البيانات",
+        description: "حدث خطأ أثناء تحميل رسائل التواصل",
         variant: "destructive",
       });
     } finally {
@@ -60,10 +88,19 @@ const AdminMessages = () => {
 
   const updateStatus = async (id: string, status: string) => {
     try {
+      const session = localStorage.getItem("manager_session");
+      if (!session) {
+        navigate("/admin/login");
+        return;
+      }
+
+      const { client_id } = JSON.parse(session);
+
       const { error } = await supabase
         .from("contact_messages")
         .update({ status })
-        .eq("id", id);
+        .eq("id", id)
+        .eq("client_id", client_id);
 
       if (error) throw error;
 
@@ -72,7 +109,7 @@ const AdminMessages = () => {
         description: "تم تحديث حالة الرسالة بنجاح",
       });
 
-      fetchMessages();
+      fetchMessages(client_id);
     } catch (error) {
       console.error("Error updating status:", error);
       toast({
@@ -111,6 +148,19 @@ const AdminMessages = () => {
       <AdminLayout>
         <div className="flex items-center justify-center h-64">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <AdminLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center text-red-500">
+            <p className="font-bold">خطأ!</p>
+            <p>{error}</p>
+          </div>
         </div>
       </AdminLayout>
     );
@@ -206,7 +256,7 @@ const AdminMessages = () => {
                 ))}
               </TableBody>
             </Table>
-            
+
             {messages.length === 0 && (
               <div className="text-center py-8">
                 <p className="text-muted-foreground">لا توجد رسائل تواصل حتى الآن</p>

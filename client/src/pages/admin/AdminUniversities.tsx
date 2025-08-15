@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch"; // Added Switch import
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Plus, Edit, Trash2, GraduationCap, MapPin, DollarSign, Users, Globe } from "lucide-react";
@@ -34,6 +35,7 @@ interface University {
   application_deadline?: string;
   is_featured: boolean;
   country_id?: string;
+  client_id?: string;
   countries?: {
     name_ar: string;
     name_en: string;
@@ -44,6 +46,7 @@ interface Country {
   id: string;
   name_ar: string;
   name_en: string;
+  client_id?: string;
 }
 
 const AdminUniversities = () => {
@@ -81,6 +84,7 @@ const AdminUniversities = () => {
     fetchCountries();
   }, []);
 
+  // دالة لاستخراج client_id من جلسة المدير
   const getClientId = () => {
     const session = localStorage.getItem("manager_session");
     return session ? JSON.parse(session).client_id : null;
@@ -89,7 +93,16 @@ const AdminUniversities = () => {
   const fetchUniversities = async () => {
     try {
       const clientId = getClientId();
-      if (!clientId) return;
+      if (!clientId) {
+        toast({
+          title: "خطأ في المصادقة",
+          description: "تعذر تحديد هوية العميل",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setLoading(true);
 
       const { data, error } = await supabase
         .from("universities")
@@ -109,7 +122,7 @@ const AdminUniversities = () => {
       console.error("Error fetching universities:", error);
       toast({
         title: "خطأ",
-        description: "حدث خطأ أثناء تحميل البيانات",
+        description: "حدث خطأ أثناء تحميل بيانات الجامعات",
         variant: "destructive",
       });
     } finally {
@@ -131,6 +144,11 @@ const AdminUniversities = () => {
       setCountries(data || []);
     } catch (error) {
       console.error("Error fetching countries:", error);
+      toast({
+        title: "خطأ",
+        description: "حدث خطأ أثناء تحميل قائمة الدول",
+        variant: "destructive",
+      });
     }
   };
 
@@ -153,7 +171,14 @@ const AdminUniversities = () => {
     e.preventDefault();
     try {
       const clientId = getClientId();
-      if (!clientId) return;
+      if (!clientId) {
+        toast({
+          title: "خطأ في المصادقة",
+          description: "تعذر تحديد هوية العميل",
+          variant: "destructive",
+        });
+        return;
+      }
 
       const universityData = {
         ...formData,
@@ -170,27 +195,38 @@ const AdminUniversities = () => {
       };
 
       if (editingUniversity) {
+        // التأكد من أن الجامعة التي يتم تعديلها تخص العميل الحالي
+        if (editingUniversity.client_id !== clientId) {
+          toast({
+            title: "خطأ في الصلاحيات",
+            description: "لا تملك صلاحية تعديل هذه الجامعة",
+            variant: "destructive",
+          });
+          return;
+        }
+
         const { error } = await supabase
           .from("universities")
           .update(universityData)
-          .eq("id", editingUniversity.id);
-        
+          .eq("id", editingUniversity.id)
+          .eq("client_id", clientId); // التأكد من تحديث الجامعات الخاصة بالعميل فقط
+
         if (error) throw error;
-        
+
         toast({
           title: "تم التحديث",
-          description: "تم تحديث الجامعة بنجاح",
+          description: "تم تحديث بيانات الجامعة بنجاح",
         });
       } else {
         const { error } = await supabase
           .from("universities")
-          .insert(universityData);
-        
+          .insert([{ ...universityData, client_id: clientId }]);
+
         if (error) throw error;
-        
+
         toast({
-          title: "تمت الإضافة",
-          description: "تم إضافة الجامعة بنجاح",
+          title: "تم الإضافة",
+          description: "تم إضافة الجامعة الجديدة بنجاح",
         });
       }
 
@@ -200,13 +236,25 @@ const AdminUniversities = () => {
       console.error("Error saving university:", error);
       toast({
         title: "خطأ",
-        description: "حدث خطأ أثناء حفظ البيانات",
+        description: "حدث خطأ أثناء حفظ بيانات الجامعة",
         variant: "destructive",
       });
     }
   };
 
   const handleEdit = (university: University) => {
+    const clientId = getClientId();
+
+    // التأكد من أن الجامعة تخص العميل الحالي قبل التعديل
+    if (university.client_id !== clientId) {
+      toast({
+        title: "خطأ في الصلاحيات",
+        description: "لا تملك صلاحية تعديل هذه الجامعة",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setEditingUniversity(university);
     setFormData({
       name_ar: university.name_ar,
@@ -237,12 +285,17 @@ const AdminUniversities = () => {
     if (!confirm("هل أنت متأكد من حذف هذه الجامعة؟")) return;
 
     try {
-      const { error } = await supabase
+      const clientId = getClientId();
+      if (!clientId) return;
+
+      // التأكد من أن الجامعة تخص العميل الحالي قبل الحذف
+      const { error: deleteError } = await supabase
         .from("universities")
         .delete()
-        .eq("id", id);
+        .eq("id", id)
+        .eq("client_id", clientId);
 
-      if (error) throw error;
+      if (deleteError) throw deleteError;
 
       toast({
         title: "تم الحذف",
@@ -320,7 +373,7 @@ const AdminUniversities = () => {
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="name_ar">اسم الجامعة بالعربية</Label>
+                    <Label htmlFor="name_ar">اسم الجامعة بالعربية *</Label>
                     <Input
                       id="name_ar"
                       name="name_ar"
@@ -330,7 +383,7 @@ const AdminUniversities = () => {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="name_en">اسم الجامعة بالإنجليزية</Label>
+                    <Label htmlFor="name_en">اسم الجامعة بالإنجليزية *</Label>
                     <Input
                       id="name_en"
                       name="name_en"
@@ -340,7 +393,7 @@ const AdminUniversities = () => {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="slug">الرابط المختصر</Label>
+                    <Label htmlFor="slug">الرابط المختصر *</Label>
                     <Input
                       id="slug"
                       name="slug"
@@ -351,7 +404,10 @@ const AdminUniversities = () => {
                   </div>
                   <div>
                     <Label htmlFor="country_id">الدولة</Label>
-                    <Select value={formData.country_id} onValueChange={(value) => handleSelectChange("country_id", value)}>
+                    <Select 
+                      value={formData.country_id} 
+                      onValueChange={(value) => handleSelectChange("country_id", value)}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="اختر الدولة" />
                       </SelectTrigger>
@@ -380,6 +436,7 @@ const AdminUniversities = () => {
                       name="website_url"
                       value={formData.website_url}
                       onChange={handleInputChange}
+                      placeholder="https://example.com"
                     />
                   </div>
                 </div>
@@ -391,6 +448,7 @@ const AdminUniversities = () => {
                       id="world_ranking"
                       name="world_ranking"
                       type="number"
+                      min="0"
                       value={formData.world_ranking}
                       onChange={handleInputChange}
                     />
@@ -401,6 +459,7 @@ const AdminUniversities = () => {
                       id="local_ranking"
                       name="local_ranking"
                       type="number"
+                      min="0"
                       value={formData.local_ranking}
                       onChange={handleInputChange}
                     />
@@ -411,6 +470,7 @@ const AdminUniversities = () => {
                       id="student_count"
                       name="student_count"
                       type="number"
+                      min="0"
                       value={formData.student_count}
                       onChange={handleInputChange}
                     />
@@ -421,6 +481,8 @@ const AdminUniversities = () => {
                       id="acceptance_rate"
                       name="acceptance_rate"
                       type="number"
+                      min="0"
+                      max="100"
                       step="0.1"
                       value={formData.acceptance_rate}
                       onChange={handleInputChange}
@@ -430,32 +492,69 @@ const AdminUniversities = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="tuition_fee_min">أقل رسوم دراسية</Label>
+                    <Label htmlFor="tuition_fee_min">أقل رسوم دراسية ($)</Label>
                     <Input
                       id="tuition_fee_min"
                       name="tuition_fee_min"
                       type="number"
+                      min="0"
                       value={formData.tuition_fee_min}
                       onChange={handleInputChange}
                     />
                   </div>
                   <div>
-                    <Label htmlFor="tuition_fee_max">أعلى رسوم دراسية</Label>
+                    <Label htmlFor="tuition_fee_max">أعلى رسوم دراسية ($)</Label>
                     <Input
                       id="tuition_fee_max"
                       name="tuition_fee_max"
                       type="number"
+                      min="0"
                       value={formData.tuition_fee_max}
                       onChange={handleInputChange}
                     />
                   </div>
                 </div>
 
+                <div>
+                  <Label htmlFor="description_ar">الوصف بالعربية</Label>
+                  <Textarea
+                    id="description_ar"
+                    name="description_ar"
+                    value={formData.description_ar}
+                    onChange={handleInputChange}
+                    rows={4}
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="description_en">الوصف بالإنجليزية</Label>
+                  <Textarea
+                    id="description_en"
+                    name="description_en"
+                    value={formData.description_en}
+                    onChange={handleInputChange}
+                    rows={4}
+                  />
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="is_featured"
+                    checked={formData.is_featured}
+                    onCheckedChange={(checked) => setFormData(prev => ({ ...prev, is_featured: checked }))}
+                  />
+                  <Label htmlFor="is_featured">وضع مميز</Label>
+                </div>
+
                 <div className="flex gap-4">
                   <Button type="submit">
-                    {editingUniversity ? "تحديث" : "إضافة"}
+                    {editingUniversity ? "حفظ التعديلات" : "إضافة الجامعة"}
                   </Button>
-                  <Button type="button" variant="outline" onClick={resetForm}>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={resetForm}
+                  >
                     إلغاء
                   </Button>
                 </div>
@@ -485,30 +584,51 @@ const AdminUniversities = () => {
                 {universities.map((university) => (
                   <TableRow key={university.id}>
                     <TableCell>
-                      <div>
-                        <div className="font-medium">{university.name_ar}</div>
-                        <div className="text-sm text-muted-foreground">{university.name_en}</div>
+                      <div className="flex items-center gap-3">
+                        {university.logo_url && (
+                          <img
+                            src={university.logo_url}
+                            alt={university.name_ar}
+                            className="w-10 h-10 object-contain"
+                          />
+                        )}
+                        <div>
+                          <div className="font-medium">{university.name_ar}</div>
+                          <div className="text-sm text-muted-foreground">{university.name_en}</div>
+                        </div>
                       </div>
                     </TableCell>
-                    <TableCell>{university.countries?.name_ar}</TableCell>
-                    <TableCell>{university.city}</TableCell>
-                    <TableCell>{university.world_ranking}</TableCell>
+                    <TableCell>{university.countries?.name_ar || "-"}</TableCell>
+                    <TableCell>{university.city || "-"}</TableCell>
+                    <TableCell>{university.world_ranking || "-"}</TableCell>
                     <TableCell>
                       {university.tuition_fee_min && university.tuition_fee_max ? (
                         <span>${university.tuition_fee_min.toLocaleString()} - ${university.tuition_fee_max.toLocaleString()}</span>
                       ) : (
-                        "غير محدد"
+                        "-"
                       )}
                     </TableCell>
                     <TableCell>
-                      {university.is_featured && <Badge variant="secondary">مميز</Badge>}
+                      {university.is_featured ? (
+                        <Badge variant="default">مميز</Badge>
+                      ) : (
+                        <Badge variant="secondary">عادي</Badge>
+                      )}
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-2">
-                        <Button variant="outline" size="sm" onClick={() => handleEdit(university)}>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => handleEdit(university)}
+                        >
                           <Edit className="w-4 h-4" />
                         </Button>
-                        <Button variant="destructive" size="sm" onClick={() => handleDelete(university.id)}>
+                        <Button 
+                          variant="destructive" 
+                          size="sm" 
+                          onClick={() => handleDelete(university.id)}
+                        >
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
@@ -517,6 +637,12 @@ const AdminUniversities = () => {
                 ))}
               </TableBody>
             </Table>
+
+            {universities.length === 0 && (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground">لا توجد جامعات مسجلة حتى الآن</p>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

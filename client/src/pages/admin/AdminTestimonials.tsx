@@ -90,7 +90,7 @@ const AdminTestimonials = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       const clientId = getClientId();
       if (!clientId) return;
@@ -237,7 +237,7 @@ const AdminTestimonials = () => {
             <h1 className="text-3xl font-bold">إدارة آراء العملاء</h1>
             <p className="text-muted-foreground">إدارة آراء وتقييمات العملاء</p>
           </div>
-          
+
           <Dialog open={showForm} onOpenChange={setShowForm}>
             <DialogTrigger asChild>
               <Button onClick={() => resetForm()}>
@@ -245,14 +245,14 @@ const AdminTestimonials = () => {
                 إضافة رأي جديد
               </Button>
             </DialogTrigger>
-            
+
             <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>
                   {editingTestimonial ? "تعديل رأي العميل" : "إضافة رأي جديد"}
                 </DialogTitle>
               </DialogHeader>
-              
+
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
@@ -264,7 +264,7 @@ const AdminTestimonials = () => {
                       required
                     />
                   </div>
-                  
+
                   <div>
                     <Label htmlFor="name_en">الاسم بالإنجليزية *</Label>
                     <Input
@@ -285,7 +285,7 @@ const AdminTestimonials = () => {
                       onChange={(e) => handleInputChange("title_ar", e.target.value)}
                     />
                   </div>
-                  
+
                   <div>
                     <Label htmlFor="title_en">المسمى الوظيفي (إنجليزي)</Label>
                     <Input
@@ -305,7 +305,7 @@ const AdminTestimonials = () => {
                       onChange={(e) => handleInputChange("avatar_url", e.target.value)}
                     />
                   </div>
-                  
+
                   <div>
                     <Label htmlFor="rating">التقييم (1-5)</Label>
                     <Input
@@ -438,7 +438,7 @@ const AdminTestimonials = () => {
                 ))}
               </TableBody>
             </Table>
-            
+
             {testimonials.length === 0 && (
               <div className="text-center py-8">
                 <p className="text-muted-foreground">لا توجد آراء عملاء حتى الآن</p>

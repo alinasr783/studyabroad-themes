@@ -12,9 +12,10 @@ import { X, Calendar, Clock } from "lucide-react";
 interface ConsultationFormProps {
   onClose: () => void;
   programName?: string;
+  clientId?: string;
 }
 
-const ConsultationForm = ({ onClose, programName }: ConsultationFormProps) => {
+const ConsultationForm = ({ onClose, programName, clientId = "00000000-0000-0000-0000-000000000001" }: ConsultationFormProps) => {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     full_name: "",
@@ -44,14 +45,13 @@ const ConsultationForm = ({ onClose, programName }: ConsultationFormProps) => {
     setLoading(true);
 
     try {
-      // Get client_id from settings or use default
-      const clientId = "00000000-0000-0000-0000-000000000001";
-      
       const { error } = await supabase
         .from('consultations')
         .insert([{
           ...formData,
-          client_id: clientId
+          client_id: clientId,
+          preferred_date: formData.preferred_date || null,
+          preferred_time: formData.preferred_time || null
         }]);
 
       if (error) throw error;
@@ -63,6 +63,7 @@ const ConsultationForm = ({ onClose, programName }: ConsultationFormProps) => {
 
       onClose();
     } catch (error) {
+      console.error('Error submitting consultation:', error);
       toast({
         title: "خطأ في حجز الاستشارة",
         description: "حدث خطأ، يرجى المحاولة مرة أخرى",
@@ -74,27 +75,32 @@ const ConsultationForm = ({ onClose, programName }: ConsultationFormProps) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-      <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        <CardHeader>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
+      <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl border-0">
+        <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-800 text-white rounded-t-lg">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-2xl">احجز استشارة مجانية</CardTitle>
-            <Button variant="ghost" size="sm" onClick={onClose}>
-              <X className="w-4 h-4" />
+            <CardTitle className="text-2xl font-bold">احجز استشارة مجانية</CardTitle>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={onClose}
+              className="text-white hover:bg-white/10 rounded-full"
+            >
+              <X className="w-5 h-5" />
             </Button>
           </div>
-          <p className="text-muted-foreground">
+          <p className="text-white/90">
             احصل على استشارة مجانية مع خبرائنا لتحديد أفضل مسار دراسي لك
           </p>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-6">
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Personal Information */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold">المعلومات الشخصية</h3>
+              <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">المعلومات الشخصية</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="full_name">الاسم الكامل *</Label>
+                <div className="space-y-2">
+                  <Label htmlFor="full_name" className="text-gray-700">الاسم الكامل *</Label>
                   <Input
                     id="full_name"
                     name="full_name"
@@ -102,10 +108,11 @@ const ConsultationForm = ({ onClose, programName }: ConsultationFormProps) => {
                     onChange={handleInputChange}
                     required
                     placeholder="أدخل اسمك الكامل"
+                    className="focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
-                <div>
-                  <Label htmlFor="email">البريد الإلكتروني *</Label>
+                <div className="space-y-2">
+                  <Label htmlFor="email" className="text-gray-700">البريد الإلكتروني *</Label>
                   <Input
                     id="email"
                     name="email"
@@ -114,11 +121,12 @@ const ConsultationForm = ({ onClose, programName }: ConsultationFormProps) => {
                     onChange={handleInputChange}
                     required
                     placeholder="أدخل بريدك الإلكتروني"
+                    className="focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
               </div>
-              <div>
-                <Label htmlFor="phone">رقم الهاتف *</Label>
+              <div className="space-y-2">
+                <Label htmlFor="phone" className="text-gray-700">رقم الهاتف *</Label>
                 <Input
                   id="phone"
                   name="phone"
@@ -126,18 +134,22 @@ const ConsultationForm = ({ onClose, programName }: ConsultationFormProps) => {
                   onChange={handleInputChange}
                   required
                   placeholder="أدخل رقم هاتفك"
+                  className="focus:ring-2 focus:ring-blue-500"
                 />
               </div>
             </div>
 
             {/* Study Preferences */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold">التفضيلات الدراسية</h3>
+              <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">التفضيلات الدراسية</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="country_preference">الدولة المفضلة</Label>
-                  <Select onValueChange={(value) => handleSelectChange("country_preference", value)}>
-                    <SelectTrigger>
+                <div className="space-y-2">
+                  <Label htmlFor="country_preference" className="text-gray-700">الدولة المفضلة</Label>
+                  <Select 
+                    onValueChange={(value) => handleSelectChange("country_preference", value)}
+                    value={formData.country_preference}
+                  >
+                    <SelectTrigger className="focus:ring-2 focus:ring-blue-500">
                       <SelectValue placeholder="اختر الدولة" />
                     </SelectTrigger>
                     <SelectContent>
@@ -151,10 +163,13 @@ const ConsultationForm = ({ onClose, programName }: ConsultationFormProps) => {
                     </SelectContent>
                   </Select>
                 </div>
-                <div>
-                  <Label htmlFor="study_level">المستوى الدراسي</Label>
-                  <Select onValueChange={(value) => handleSelectChange("study_level", value)}>
-                    <SelectTrigger>
+                <div className="space-y-2">
+                  <Label htmlFor="study_level" className="text-gray-700">المستوى الدراسي</Label>
+                  <Select 
+                    onValueChange={(value) => handleSelectChange("study_level", value)}
+                    value={formData.study_level}
+                  >
+                    <SelectTrigger className="focus:ring-2 focus:ring-blue-500">
                       <SelectValue placeholder="اختر المستوى" />
                     </SelectTrigger>
                     <SelectContent>
@@ -168,20 +183,24 @@ const ConsultationForm = ({ onClose, programName }: ConsultationFormProps) => {
                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="field_of_interest">مجال الاهتمام</Label>
+                <div className="space-y-2">
+                  <Label htmlFor="field_of_interest" className="text-gray-700">مجال الاهتمام</Label>
                   <Input
                     id="field_of_interest"
                     name="field_of_interest"
                     value={formData.field_of_interest}
                     onChange={handleInputChange}
                     placeholder="مثل: الهندسة، الطب، إدارة الأعمال"
+                    className="focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
-                <div>
-                  <Label htmlFor="budget_range">الميزانية المتوقعة</Label>
-                  <Select onValueChange={(value) => handleSelectChange("budget_range", value)}>
-                    <SelectTrigger>
+                <div className="space-y-2">
+                  <Label htmlFor="budget_range" className="text-gray-700">الميزانية المتوقعة</Label>
+                  <Select 
+                    onValueChange={(value) => handleSelectChange("budget_range", value)}
+                    value={formData.budget_range}
+                  >
+                    <SelectTrigger className="focus:ring-2 focus:ring-blue-500">
                       <SelectValue placeholder="اختر الميزانية" />
                     </SelectTrigger>
                     <SelectContent>
@@ -198,34 +217,34 @@ const ConsultationForm = ({ onClose, programName }: ConsultationFormProps) => {
 
             {/* Consultation Preferences */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold">موعد الاستشارة</h3>
+              <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">موعد الاستشارة</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="preferred_date">التاريخ المفضل</Label>
+                <div className="space-y-2">
+                  <Label htmlFor="preferred_date" className="text-gray-700">التاريخ المفضل</Label>
                   <div className="relative">
-                    <Calendar className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
+                    <Calendar className="w-4 h-4 absolute left-3 top-3 text-gray-500" />
                     <Input
                       id="preferred_date"
                       name="preferred_date"
                       type="date"
                       value={formData.preferred_date}
                       onChange={handleInputChange}
-                      className="pl-10"
+                      className="pl-10 focus:ring-2 focus:ring-blue-500"
                       min={new Date().toISOString().split('T')[0]}
                     />
                   </div>
                 </div>
-                <div>
-                  <Label htmlFor="preferred_time">الوقت المفضل</Label>
+                <div className="space-y-2">
+                  <Label htmlFor="preferred_time" className="text-gray-700">الوقت المفضل</Label>
                   <div className="relative">
-                    <Clock className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
+                    <Clock className="w-4 h-4 absolute left-3 top-3 text-gray-500" />
                     <Input
                       id="preferred_time"
                       name="preferred_time"
                       type="time"
                       value={formData.preferred_time}
                       onChange={handleInputChange}
-                      className="pl-10"
+                      className="pl-10 focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
                 </div>
@@ -233,8 +252,8 @@ const ConsultationForm = ({ onClose, programName }: ConsultationFormProps) => {
             </div>
 
             {/* Additional Message */}
-            <div>
-              <Label htmlFor="message">رسالة إضافية (اختيارية)</Label>
+            <div className="space-y-2">
+              <Label htmlFor="message" className="text-gray-700">رسالة إضافية (اختيارية)</Label>
               <Textarea
                 id="message"
                 name="message"
@@ -242,24 +261,33 @@ const ConsultationForm = ({ onClose, programName }: ConsultationFormProps) => {
                 onChange={handleInputChange}
                 rows={4}
                 placeholder="أي معلومات إضافية تود مشاركتها معنا..."
-                className="resize-none"
+                className="resize-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
 
             {/* Submit Button */}
-            <div className="flex gap-3">
+            <div className="flex gap-3 pt-4">
               <Button 
                 type="submit" 
-                className="flex-1" 
+                className="flex-1 bg-blue-600 hover:bg-blue-700 transition-colors duration-300 py-3 text-lg"
                 disabled={loading}
               >
-                {loading ? "جاري الحجز..." : "حجز الاستشارة"}
+                {loading ? (
+                  <span className="flex items-center justify-center">
+                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    جاري الحجز...
+                  </span>
+                ) : "حجز الاستشارة"}
               </Button>
               <Button 
                 type="button" 
                 variant="outline" 
                 onClick={onClose}
                 disabled={loading}
+                className="py-3 text-lg border-gray-300 hover:bg-gray-50"
               >
                 إلغاء
               </Button>

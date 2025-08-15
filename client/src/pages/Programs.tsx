@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+import { Link } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, DollarSign, Clock, GraduationCap, BookOpen, MapPin, Star } from "lucide-react";
-import ConsultationForm from "@/components/forms/ConsultationForm";
+import { Calendar, DollarSign, BookOpen, Star } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 
 interface Program {
   id: string;
@@ -15,399 +16,196 @@ interface Program {
   degree_level: string;
   field_of_study: string;
   duration_years?: number;
-  duration_months?: number;
   tuition_fee?: number;
   description_ar?: string;
-  requirements_ar?: string;
-  career_prospects_ar?: string;
   language?: string;
-  start_date?: string;
-  application_deadline?: string;
   is_featured?: boolean;
-  universities?: {
-    name_ar: string;
-    logo_url?: string;
-    city?: string;
-    countries?: {
-      name_ar: string;
-      flag_url?: string;
-    };
-  };
+  university_id?: string;
 }
 
-const Programs = () => {
-  const { slug } = useParams();
+interface University {
+  id: string;
+  name_ar: string;
+  logo_url?: string;
+  city?: string;
+  country_id?: string;
+}
+
+interface Country {
+  id: string;
+  name_ar: string;
+  flag_url?: string;
+}
+
+interface SiteSettings {
+  primary_color_1?: string;
+  primary_color_2?: string;
+  primary_color_3?: string;
+}
+
+const ProgramsList = () => {
   const [programs, setPrograms] = useState<Program[]>([]);
-  const [selectedProgram, setSelectedProgram] = useState<Program | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [showConsultationForm, setShowConsultationForm] = useState(false);
+  const [universities, setUniversities] = useState<University[]>([]);
+  const [countries, setCountries] = useState<Country[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [clientId, setClientId] = useState<string | null>(null);
 
-  // بيانات وهمية للجامعات
-  const dummyUniversities = [
-    {
-      name_ar: "جامعة هارفارد",
-      logo_url: "https://upload.wikimedia.org/wikipedia/commons/thumb/7/70/Harvard_University_logo.svg/1200px-Harvard_University_logo.svg.png",
-      city: "كامبريدج",
-      countries: {
-        name_ar: "الولايات المتحدة",
-        flag_url: "https://flagcdn.com/w320/us.png"
-      }
-    },
-    {
-      name_ar: "جامعة أكسفورد",
-      logo_url: "https://upload.wikimedia.org/wikipedia/commons/thumb/f/ff/University_of_Oxford.svg/1200px-University_of_Oxford.svg.png",
-      city: "أكسفورد",
-      countries: {
-        name_ar: "المملكة المتحدة",
-        flag_url: "https://flagcdn.com/w320/gb.png"
-      }
-    },
-    {
-      name_ar: "جامعة ستانفورد",
-      logo_url: "https://upload.wikimedia.org/wikipedia/commons/thumb/f/fe/Stanford_University_logo_2008.svg/1200px-Stanford_University_logo_2008.svg.png",
-      city: "ستانفورد",
-      countries: {
-        name_ar: "الولايات المتحدة",
-        flag_url: "https://flagcdn.com/w320/us.png"
-      }
-    }
-  ];
-
-  // بيانات وهمية للبرامج
-  const dummyPrograms: Program[] = [
-    {
-      id: "1",
-      name_ar: "بكالوريوس علوم الحاسوب",
-      name_en: "Bachelor of Computer Science",
-      slug: "computer-science",
-      degree_level: "بكالوريوس",
-      field_of_study: "علوم الحاسوب",
-      duration_years: 4,
-      tuition_fee: 25000,
-      description_ar: "برنامج متكامل في علوم الحاسوب يشمل البرمجة، الخوارزميات، قواعد البيانات، الذكاء الاصطناعي وأمن المعلومات. يهدف البرنامج إلى تخريج متخصصين مؤهلين لسوق العمل التقني.",
-      requirements_ar: "شهادة ثانوية بمعدل لا يقل عن 85% - اجتياز اختبار الرياضيات - شهادة لغة انجليزية (توفل 80 أو آيلتس 6.0)",
-      career_prospects_ar: "مبرمج - مهندس برمجيات - محلل نظم - خبير أمن معلوماتي - مطور تطبيقات",
-      language: "الإنجليزية",
-      start_date: "2024-09-01",
-      application_deadline: "2024-05-15",
-      is_featured: true,
-      universities: dummyUniversities[0]
-    },
-    {
-      id: "2",
-      name_ar: "ماجستير إدارة الأعمال",
-      name_en: "Master of Business Administration",
-      slug: "mba",
-      degree_level: "ماجستير",
-      field_of_study: "إدارة الأعمال",
-      duration_years: 2,
-      tuition_fee: 35000,
-      description_ar: "برنامج MBA مصمم لتطوير المهارات القيادية والإدارية مع التركيز على حالات دراسية واقعية. يشمل تخصصات فرعية في التسويق، التمويل، الموارد البشرية.",
-      requirements_ar: "بكالوريوس في أي تخصص - خبرة عمل لا تقل عن سنتين - رسائل توصية - مقابلة شخصية - شهادة لغة انجليزية (توفل 90 أو آيلتس 6.5)",
-      career_prospects_ar: "مدير تنفيذي - مدير مشاريع - استشاري إداري - رائد أعمال - مدير تسويق",
-      language: "الإنجليزية",
-      start_date: "2024-10-01",
-      application_deadline: "2024-06-30",
-      is_featured: true,
-      universities: dummyUniversities[1]
-    },
-    {
-      id: "3",
-      name_ar: "دكتوراه في الهندسة الكهربائية",
-      name_en: "PhD in Electrical Engineering",
-      slug: "electrical-engineering",
-      degree_level: "دكتوراه",
-      field_of_study: "الهندسة الكهربائية",
-      duration_years: 4,
-      tuition_fee: 28000,
-      description_ar: "برنامج دكتوراه متقدم في الهندسة الكهربائية مع فرص بحثية في مجالات الطاقة المتجددة، الأنظمة الذكية، معالجة الإشارات والاتصالات.",
-      requirements_ar: "ماجستير في الهندسة الكهربائية أو تخصص ذو صلة - مقترح بحث - رسائل توصية - مقابلة مع المشرفين المحتملين",
-      career_prospects_ar: "باحث أكاديمي - مهندس تصميم - استشاري تقني - مدير مشاريع هندسية",
-      language: "الإنجليزية",
-      start_date: "2024-09-15",
-      application_deadline: "2024-04-01",
-      is_featured: false,
-      universities: dummyUniversities[2]
-    },
-    {
-      id: "4",
-      name_ar: "بكالوريوس الطب والجراحة",
-      name_en: "Bachelor of Medicine and Surgery",
-      slug: "medicine",
-      degree_level: "بكالوريوس",
-      field_of_study: "الطب البشري",
-      duration_years: 6,
-      tuition_fee: 40000,
-      description_ar: "برنامج متكامل في الطب البشري يؤهل الطلاب لممارسة المهنة بعد التخرج والتخصص. يشمل تدريبات عملية في مستشفيات تعليمية.",
-      requirements_ar: "شهادة ثانوية علمية بمعدل لا يقل عن 90% - اجتياز اختبار القبول الطبي - مقابلة شخصية - شهادة لغة انجليزية (توفل 85 أو آيلتس 6.5)",
-      career_prospects_ar: "طبيب عام - أخصائي بعد التخصص - باحث طبي - استشاري",
-      language: "الإنجليزية",
-      start_date: "2024-08-01",
-      application_deadline: "2024-03-15",
-      is_featured: true,
-      universities: dummyUniversities[0]
-    },
-    {
-      id: "5",
-      name_ar: "ماجستير علم البيانات",
-      name_en: "Master of Data Science",
-      slug: "data-science",
-      degree_level: "ماجستير",
-      field_of_study: "علم البيانات",
-      duration_years: 1.5,
-      tuition_fee: 32000,
-      description_ar: "برنامج متخصص في علم البيانات يشمل تعلم الآلة، التحليل الإحصائي، معالجة البيانات الضخمة وتطبيقات الذكاء الاصطناعي.",
-      requirements_ar: "بكالوريوس في علوم الحاسوب، الرياضيات أو تخصص ذو صلة - معرفة بلغات البرمجة - شهادة لغة انجليزية (توفل 85 أو آيلتس 6.5)",
-      career_prospects_ar: "عالم بيانات - محلل بيانات - مهندس تعلم آلي - باحث في الذكاء الاصطناعي",
-      language: "الإنجليزية",
-      start_date: "2024-11-01",
-      application_deadline: "2024-07-15",
-      is_featured: false,
-      universities: dummyUniversities[1]
-    }
-  ];
-
+  // جلب معرف العميل أولاً
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
+    const fetchClientId = async () => {
+      try {
+        const domain = window.location.hostname;
+        const { data: clientData, error: clientError } = await supabase
+          .from("clients")
+          .select("id")
+          .eq("domain", domain)
+          .maybeSingle();
 
-      if (slug) {
-        // البحث عن البرنامج المحدد في البيانات الوهمية
-        const programData = dummyPrograms.find(p => p.slug === slug) || null;
-        setSelectedProgram(programData);
-      } else {
-        // استخدام جميع البرامج الوهمية
-        setPrograms(dummyPrograms);
+        if (clientError) throw clientError;
+        if (!clientData) throw new Error("لم يتم العثور على عميل لهذا الدومين");
+
+        setClientId(clientData.id);
+      } catch (err) {
+        console.error("Error fetching client ID:", err);
+        setError("حدث خطأ أثناء تحميل البيانات. يرجى المحاولة لاحقاً.");
+        setLoading(false);
       }
-
-      setLoading(false);
     };
 
-    fetchData();
-  }, [slug]);
+    fetchClientId();
+  }, []);
+
+  // جلب إعدادات الموقع من Supabase بناءً على clientId
+  const { data: siteSettings } = useQuery<SiteSettings>({
+    queryKey: ['siteSettings', clientId],
+    queryFn: async () => {
+      if (!clientId) return null;
+
+      const { data, error } = await supabase
+        .from('site_settings')
+        .select('primary_color_1, primary_color_2, primary_color_3')
+        .eq('client_id', clientId)
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!clientId
+  });
+
+  // تطبيق ألوان الموقع الديناميكية
+  useEffect(() => {
+    if (siteSettings) {
+      const root = document.documentElement;
+      if (siteSettings.primary_color_1) {
+        root.style.setProperty('--primary', siteSettings.primary_color_1);
+      }
+      if (siteSettings.primary_color_2) {
+        root.style.setProperty('--primary-2', siteSettings.primary_color_2);
+      }
+      if (siteSettings.primary_color_3) {
+        root.style.setProperty('--primary-3', siteSettings.primary_color_3);
+      }
+    }
+  }, [siteSettings]);
+
+  const fetchData = async () => {
+    if (!clientId) return;
+
+    try {
+      setLoading(true);
+
+      // جلب البرامج الخاصة بالعميل
+      const { data: programsData, error: programsError } = await supabase
+        .from('programs')
+        .select('*')
+        .eq('client_id', clientId)
+        .order('created_at', { ascending: false });
+
+      if (programsError) throw programsError;
+
+      // جلب الجامعات الخاصة بالعميل
+      const { data: universitiesData, error: universitiesError } = await supabase
+        .from('universities')
+        .select('*')
+        .eq('client_id', clientId);
+
+      if (universitiesError) throw universitiesError;
+
+      // جلب الدول الخاصة بالعميل
+      const { data: countriesData, error: countriesError } = await supabase
+        .from('countries')
+        .select('*')
+        .eq('client_id', clientId);
+
+      if (countriesError) throw countriesError;
+
+      setPrograms(programsData || []);
+      setUniversities(universitiesData || []);
+      setCountries(countriesData || []);
+    } catch (err) {
+      console.error('Error fetching data:', err);
+      setError('حدث خطأ أثناء جلب البيانات. يرجى المحاولة مرة أخرى.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (clientId) {
+      fetchData();
+    }
+  }, [clientId]);
+
+  // دمج البيانات يدوياً
+  const getMergedData = () => {
+    return programs.map(program => {
+      const university = universities.find(u => u.id === program.university_id);
+      const country = university ? countries.find(c => c.id === university.country_id) : null;
+
+      return {
+        ...program,
+        universities: university ? {
+          ...university,
+          countries: country
+        } : undefined
+      };
+    });
+  };
+
+  const mergedPrograms = getMergedData();
 
   if (loading) {
     return (
       <Layout>
         <div className="min-h-screen flex items-center justify-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+          <div 
+            className="animate-spin rounded-full h-32 w-32 border-b-2"
+            style={{
+              borderColor: siteSettings?.primary_color_1 || '#3b82f6'
+            }}
+          ></div>
         </div>
       </Layout>
     );
   }
 
-  if (selectedProgram) {
+  if (error) {
     return (
       <Layout>
-        <div className="container mx-auto px-4 py-8">
-          {/* Program Hero */}
-          <div className="bg-gradient-to-r from-primary to-secondary rounded-2xl p-8 text-white mb-8">
-            <div className="flex items-start gap-6">
-              {selectedProgram.universities?.logo_url && (
-                <img 
-                  src={selectedProgram.universities.logo_url} 
-                  alt={selectedProgram.universities.name_ar}
-                  className="w-16 h-16 rounded-lg object-cover bg-white p-2"
-                />
-              )}
-              <div className="flex-1">
-                <div className="flex gap-3 mb-3">
-                  <Badge variant="secondary" className="bg-accent text-accent-foreground">
-                    {selectedProgram.degree_level}
-                  </Badge>
-                  <Badge variant="secondary" className="bg-accent text-accent-foreground">
-                    {selectedProgram.field_of_study}
-                  </Badge>
-                  {selectedProgram.is_featured && (
-                    <Badge variant="secondary" className="bg-yellow-500 text-yellow-900">
-                      <Star className="w-4 h-4 mr-1" />
-                      مميز
-                    </Badge>
-                  )}
-                </div>
-                <h1 className="text-4xl font-bold mb-3">{selectedProgram.name_ar}</h1>
-                {selectedProgram.universities && (
-                  <div className="flex items-center gap-2 text-lg opacity-90">
-                    {selectedProgram.universities.countries?.flag_url && (
-                      <img 
-                        src={selectedProgram.universities.countries.flag_url} 
-                        alt={selectedProgram.universities.countries.name_ar}
-                        className="w-6 h-4 rounded object-cover"
-                      />
-                    )}
-                    <span>{selectedProgram.universities.name_ar}</span>
-                    {selectedProgram.universities.city && (
-                      <>
-                        <span>•</span>
-                        <span>{selectedProgram.universities.city}</span>
-                      </>
-                    )}
-                    {selectedProgram.universities.countries && (
-                      <>
-                        <span>•</span>
-                        <span>{selectedProgram.universities.countries.name_ar}</span>
-                      </>
-                    )}
-                  </div>
-                )}
-              </div>
-              <Button 
-                size="lg" 
-                variant="secondary"
-                onClick={() => setShowConsultationForm(true)}
-                className="bg-white text-primary hover:bg-gray-100"
-              >
-                احجز استشارة مجانية
-              </Button>
-            </div>
+        <div className="container mx-auto px-4 py-8 text-center">
+          <div 
+            className="border px-4 py-3 rounded relative" 
+            style={{
+              backgroundColor: siteSettings?.primary_color_1 ? `${siteSettings.primary_color_1}10` : 'rgba(59, 130, 246, 0.1)',
+              borderColor: siteSettings?.primary_color_1 ? `${siteSettings.primary_color_1}30` : 'rgba(59, 130, 246, 0.2)',
+              color: siteSettings?.primary_color_1 || '#3b82f6'
+            }}
+          >
+            <strong className="font-bold">خطأ!</strong>
+            <span className="block sm:inline"> {error}</span>
           </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Program Details */}
-            <div className="lg:col-span-2 space-y-8">
-              {/* Program Info */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <BookOpen className="w-5 h-5" />
-                    تفاصيل البرنامج
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <p className="text-lg leading-relaxed">{selectedProgram.description_ar}</p>
-                </CardContent>
-              </Card>
-
-              {/* Requirements */}
-              {selectedProgram.requirements_ar && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <GraduationCap className="w-5 h-5" />
-                      متطلبات القبول
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="prose prose-arabic max-w-none">
-                      <p className="leading-relaxed">{selectedProgram.requirements_ar}</p>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Career Prospects */}
-              {selectedProgram.career_prospects_ar && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Clock className="w-5 h-5" />
-                      الفرص المهنية
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="prose prose-arabic max-w-none">
-                      <p className="leading-relaxed">{selectedProgram.career_prospects_ar}</p>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
-
-            {/* Sidebar */}
-            <div className="space-y-6">
-              {/* Quick Facts */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>معلومات سريعة</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {selectedProgram.duration_years && (
-                    <div className="flex items-center gap-3">
-                      <Calendar className="w-5 h-5 text-primary" />
-                      <div>
-                        <p className="font-medium">مدة البرنامج</p>
-                        <p className="text-sm text-muted-foreground">
-                          {selectedProgram.duration_years} سنوات
-                          {selectedProgram.duration_months && ` (${selectedProgram.duration_months} شهر)`}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                  {selectedProgram.tuition_fee && (
-                    <div className="flex items-center gap-3">
-                      <DollarSign className="w-5 h-5 text-primary" />
-                      <div>
-                        <p className="font-medium">الرسوم الدراسية</p>
-                        <p className="text-sm text-muted-foreground">
-                          ${selectedProgram.tuition_fee.toLocaleString()} سنوياً
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                  {selectedProgram.language && (
-                    <div className="flex items-center gap-3">
-                      <BookOpen className="w-5 h-5 text-primary" />
-                      <div>
-                        <p className="font-medium">لغة التدريس</p>
-                        <p className="text-sm text-muted-foreground">{selectedProgram.language}</p>
-                      </div>
-                    </div>
-                  )}
-
-                  {selectedProgram.start_date && (
-                    <div className="flex items-center gap-3">
-                      <Calendar className="w-5 h-5 text-primary" />
-                      <div>
-                        <p className="font-medium">تاريخ البدء</p>
-                        <p className="text-sm text-muted-foreground">
-                          {new Date(selectedProgram.start_date).toLocaleDateString('ar-SA')}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                  {selectedProgram.application_deadline && (
-                    <div className="flex items-center gap-3">
-                      <Clock className="w-5 h-5 text-primary" />
-                      <div>
-                        <p className="font-medium">آخر موعد للتقديم</p>
-                        <p className="text-sm text-muted-foreground">
-                          {new Date(selectedProgram.application_deadline).toLocaleDateString('ar-SA')}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* CTA Card */}
-              <Card className="bg-gradient-to-br from-primary to-secondary text-white">
-                <CardContent className="p-6 text-center">
-                  <h3 className="text-xl font-bold mb-3">ابدأ رحلتك الآن</h3>
-                  <p className="mb-4 opacity-90">
-                    احصل على استشارة مجانية مع خبرائنا لتحديد أفضل مسار دراسي لك
-                  </p>
-                  <Button 
-                    variant="secondary" 
-                    className="w-full bg-white text-primary hover:bg-gray-100"
-                    onClick={() => setShowConsultationForm(true)}
-                  >
-                    احجز استشارة مجانية
-                  </Button>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-
-          {/* Consultation Form Modal */}
-          {showConsultationForm && (
-            <ConsultationForm 
-              onClose={() => setShowConsultationForm(false)}
-              programName={selectedProgram.name_ar}
-            />
-          )}
         </div>
       </Layout>
     );
@@ -424,8 +222,17 @@ const Programs = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {programs.map((program) => (
-            <Card key={program.id} className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+          {mergedPrograms.map((program) => (
+            <Card 
+              key={program.id} 
+              className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
+              style={{
+                borderColor: siteSettings?.primary_color_1 ? `${siteSettings.primary_color_1}20` : 'rgba(59, 130, 246, 0.1)',
+                '&:hover': {
+                  borderColor: siteSettings?.primary_color_1 || '#3b82f6'
+                }
+              }}
+            >
               <CardHeader>
                 <div className="flex items-center gap-3 mb-3">
                   {program.universities?.logo_url && (
@@ -437,13 +244,37 @@ const Programs = () => {
                   )}
                   <div className="flex-1">
                     <div className="flex gap-2 mb-2">
-                      <Badge variant="outline" className="text-xs">{program.degree_level}</Badge>
-                      <Badge variant="outline" className="text-xs">{program.field_of_study}</Badge>
+                      <Badge 
+                        variant="outline" 
+                        className="text-xs"
+                        style={{
+                          borderColor: siteSettings?.primary_color_1 ? `${siteSettings.primary_color_1}30` : 'rgba(59, 130, 246, 0.2)',
+                          color: siteSettings?.primary_color_1 || '#3b82f6'
+                        }}
+                      >
+                        {program.degree_level}
+                      </Badge>
+                      <Badge 
+                        variant="outline" 
+                        className="text-xs"
+                        style={{
+                          borderColor: siteSettings?.primary_color_1 ? `${siteSettings.primary_color_1}30` : 'rgba(59, 130, 246, 0.2)',
+                          color: siteSettings?.primary_color_1 || '#3b82f6'
+                        }}
+                      >
+                        {program.field_of_study}
+                      </Badge>
                     </div>
                     <CardTitle className="text-lg leading-tight">{program.name_ar}</CardTitle>
                   </div>
                   {program.is_featured && (
-                    <Badge className="bg-yellow-500 text-yellow-900">
+                    <Badge 
+                      className="flex items-center"
+                      style={{
+                        backgroundColor: siteSettings?.primary_color_1 ? `${siteSettings.primary_color_1}10` : 'rgba(59, 130, 246, 0.1)',
+                        color: siteSettings?.primary_color_1 || '#3b82f6'
+                      }}
+                    >
                       <Star className="w-3 h-3 mr-1" />
                       مميز
                     </Badge>
@@ -478,25 +309,49 @@ const Programs = () => {
                 <div className="space-y-2 mb-4">
                   {program.duration_years && (
                     <div className="flex items-center gap-2 text-sm">
-                      <Calendar className="w-4 h-4 text-primary" />
+                      <Calendar 
+                        className="w-4 h-4" 
+                        style={{
+                          color: siteSettings?.primary_color_1 || '#3b82f6'
+                        }} 
+                      />
                       <span>المدة: {program.duration_years} سنوات</span>
                     </div>
                   )}
                   {program.tuition_fee && (
                     <div className="flex items-center gap-2 text-sm">
-                      <DollarSign className="w-4 h-4 text-primary" />
-                      <span>الرسوم: ${program.tuition_fee.toLocaleString()}</span>
+                      <DollarSign 
+                        className="w-4 h-4" 
+                        style={{
+                          color: siteSettings?.primary_color_1 || '#3b82f6'
+                        }} 
+                      />
+                      <span>الرسوم: ${program.tuition_fee?.toLocaleString()}</span>
                     </div>
                   )}
                   {program.language && (
                     <div className="flex items-center gap-2 text-sm">
-                      <BookOpen className="w-4 h-4 text-primary" />
+                      <BookOpen 
+                        className="w-4 h-4" 
+                        style={{
+                          color: siteSettings?.primary_color_1 || '#3b82f6'
+                        }} 
+                      />
                       <span>لغة التدريس: {program.language}</span>
                     </div>
                   )}
                 </div>
 
-                <Button asChild className="w-full">
+                <Button 
+                  asChild 
+                  className="w-full"
+                  style={{
+                    backgroundColor: siteSettings?.primary_color_1 || '#3b82f6',
+                    '&:hover': {
+                      backgroundColor: siteSettings?.primary_color_2 || '#6366f1'
+                    }
+                  }}
+                >
                   <Link to={`/programs/${program.slug}`}>
                     تفاصيل البرنامج
                   </Link>
@@ -506,7 +361,7 @@ const Programs = () => {
           ))}
         </div>
 
-        {programs.length === 0 && (
+        {mergedPrograms.length === 0 && (
           <div className="text-center py-12">
             <h3 className="text-2xl font-semibold mb-4">لا توجد برامج متاحة حالياً</h3>
             <p className="text-muted-foreground">سيتم إضافة المزيد من البرامج قريباً</p>
@@ -517,4 +372,4 @@ const Programs = () => {
   );
 };
 
-export default Programs;
+export default ProgramsList;

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -56,9 +57,11 @@ const AdminPrograms = () => {
   const [countries, setCountries] = useState<Country[]>([]);
   const [universities, setUniversities] = useState<University[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [editingProgram, setEditingProgram] = useState<Program | null>(null);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
     name_ar: "",
@@ -84,20 +87,46 @@ const AdminPrograms = () => {
   });
 
   useEffect(() => {
-    fetchPrograms();
-    fetchCountries();
-    fetchUniversities();
-  }, []);
+    const checkSessionAndFetchData = async () => {
+      try {
+        const session = localStorage.getItem("manager_session");
+        if (!session) {
+          navigate("/admin/login");
+          return;
+        }
 
-  const getClientId = () => {
-    const session = localStorage.getItem("manager_session");
-    return session ? JSON.parse(session).client_id : null;
-  };
+        const sessionData = JSON.parse(session);
+        if (!sessionData.client_id) {
+          throw new Error("بيانات الجلسة غير صالحة");
+        }
 
-  const fetchPrograms = async () => {
+        // التحقق من أن الجلسة لم تنتهي (30 دقيقة)
+        const sessionAge = Date.now() - (sessionData.timestamp || 0);
+        if (sessionAge > 30 * 60 * 1000) {
+          localStorage.removeItem("manager_session");
+          navigate("/admin/login");
+          return;
+        }
+
+        await Promise.all([
+          fetchPrograms(sessionData.client_id),
+          fetchCountries(sessionData.client_id),
+          fetchUniversities(sessionData.client_id)
+        ]);
+      } catch (err) {
+        console.error("Error initializing programs:", err);
+        setError(err instanceof Error ? err.message : "حدث خطأ غير متوقع");
+        setLoading(false);
+      }
+    };
+
+    checkSessionAndFetchData();
+  }, [navigate]);
+
+  const fetchPrograms = async (clientId: string) => {
     try {
-      const clientId = getClientId();
-      if (!clientId) return;
+      setLoading(true);
+      setError(null);
 
       const { data, error } = await supabase
         .from("programs")
@@ -109,9 +138,10 @@ const AdminPrograms = () => {
       setPrograms(data || []);
     } catch (error) {
       console.error("Error fetching programs:", error);
+      setError("حدث خطأ أثناء تحميل البرامج");
       toast({
         title: "خطأ",
-        description: "حدث خطأ أثناء تحميل البرامج",
+        description: "حدث خطأ أثناء تحميل البرامج الدراسية",
         variant: "destructive",
       });
     } finally {
@@ -119,11 +149,8 @@ const AdminPrograms = () => {
     }
   };
 
-  const fetchCountries = async () => {
+  const fetchCountries = async (clientId: string) => {
     try {
-      const clientId = getClientId();
-      if (!clientId) return;
-
       const { data, error } = await supabase
         .from("countries")
         .select("id, name_ar, name_en")
@@ -136,11 +163,8 @@ const AdminPrograms = () => {
     }
   };
 
-  const fetchUniversities = async () => {
+  const fetchUniversities = async (clientId: string) => {
     try {
-      const clientId = getClientId();
-      if (!clientId) return;
-
       const { data, error } = await supabase
         .from("universities")
         .select("id, name_ar, name_en")
@@ -168,7 +192,7 @@ const AdminPrograms = () => {
         .replace(/\-\-+/g, "-")
         .replace(/^-+/, "")
         .replace(/-+$/, "");
-      
+
       setFormData(prev => ({
         ...prev,
         slug: slug || Math.random().toString(36).substr(2, 9)
@@ -178,14 +202,19 @@ const AdminPrograms = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
-      const clientId = getClientId();
-      if (!clientId) return;
+      const session = localStorage.getItem("manager_session");
+      if (!session) {
+        navigate("/admin/login");
+        return;
+      }
+
+      const { client_id } = JSON.parse(session);
 
       const programData = {
         ...formData,
-        client_id: clientId,
+        client_id,
         duration_years: formData.duration_years ? parseInt(formData.duration_years) : null,
         duration_months: formData.duration_months ? parseInt(formData.duration_months) : null,
         tuition_fee: formData.tuition_fee ? parseInt(formData.tuition_fee) : null,
@@ -199,7 +228,8 @@ const AdminPrograms = () => {
         const { error } = await supabase
           .from("programs")
           .update(programData)
-          .eq("id", editingProgram.id);
+          .eq("id", editingProgram.id)
+          .eq("client_id", client_id);
 
         if (error) throw error;
 
@@ -220,7 +250,7 @@ const AdminPrograms = () => {
         });
       }
 
-      fetchPrograms();
+      fetchPrograms(client_id);
       resetForm();
       setShowForm(false);
     } catch (error) {
@@ -264,10 +294,19 @@ const AdminPrograms = () => {
     if (!confirm("هل أنت متأكد من حذف هذا البرنامج؟")) return;
 
     try {
+      const session = localStorage.getItem("manager_session");
+      if (!session) {
+        navigate("/admin/login");
+        return;
+      }
+
+      const { client_id } = JSON.parse(session);
+
       const { error } = await supabase
         .from("programs")
         .delete()
-        .eq("id", id);
+        .eq("id", id)
+        .eq("client_id", client_id);
 
       if (error) throw error;
 
@@ -276,7 +315,7 @@ const AdminPrograms = () => {
         description: "تم حذف البرنامج بنجاح",
       });
 
-      fetchPrograms();
+      fetchPrograms(client_id);
     } catch (error) {
       console.error("Error deleting program:", error);
       toast({
@@ -323,6 +362,19 @@ const AdminPrograms = () => {
     );
   }
 
+  if (error) {
+    return (
+      <AdminLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center text-red-500">
+            <p className="font-bold">خطأ!</p>
+            <p>{error}</p>
+          </div>
+        </div>
+      </AdminLayout>
+    );
+  }
+
   return (
     <AdminLayout>
       <div className="space-y-6">
@@ -331,7 +383,7 @@ const AdminPrograms = () => {
             <h1 className="text-3xl font-bold">إدارة البرامج الدراسية</h1>
             <p className="text-muted-foreground">إدارة البرامج الدراسية المتاحة</p>
           </div>
-          
+
           <Dialog open={showForm} onOpenChange={setShowForm}>
             <DialogTrigger asChild>
               <Button onClick={() => resetForm()}>
@@ -339,14 +391,14 @@ const AdminPrograms = () => {
                 إضافة برنامج جديد
               </Button>
             </DialogTrigger>
-            
+
             <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>
                   {editingProgram ? "تعديل البرنامج" : "إضافة برنامج جديد"}
                 </DialogTitle>
               </DialogHeader>
-              
+
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
@@ -358,7 +410,7 @@ const AdminPrograms = () => {
                       required
                     />
                   </div>
-                  
+
                   <div>
                     <Label htmlFor="name_en">الاسم بالإنجليزية *</Label>
                     <Input
@@ -385,7 +437,7 @@ const AdminPrograms = () => {
                       </SelectContent>
                     </Select>
                   </div>
-                  
+
                   <div>
                     <Label htmlFor="field_of_study">مجال الدراسة *</Label>
                     <Input
@@ -407,7 +459,7 @@ const AdminPrograms = () => {
                       onChange={(e) => handleInputChange("duration_years", e.target.value)}
                     />
                   </div>
-                  
+
                   <div>
                     <Label htmlFor="duration_months">المدة (شهور)</Label>
                     <Input
@@ -417,7 +469,7 @@ const AdminPrograms = () => {
                       onChange={(e) => handleInputChange("duration_months", e.target.value)}
                     />
                   </div>
-                  
+
                   <div>
                     <Label htmlFor="tuition_fee">الرسوم الدراسية</Label>
                     <Input
@@ -445,7 +497,7 @@ const AdminPrograms = () => {
                       </SelectContent>
                     </Select>
                   </div>
-                  
+
                   <div>
                     <Label htmlFor="university_id">الجامعة</Label>
                     <Select value={formData.university_id} onValueChange={(value) => handleInputChange("university_id", value)}>
@@ -564,7 +616,7 @@ const AdminPrograms = () => {
                 ))}
               </TableBody>
             </Table>
-            
+
             {programs.length === 0 && (
               <div className="text-center py-8">
                 <p className="text-muted-foreground">لا توجد برامج دراسية حتى الآن</p>
