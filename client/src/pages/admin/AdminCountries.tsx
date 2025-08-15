@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Plus, Edit, Trash2, Globe, MapPin, DollarSign } from "lucide-react";
+import { Plus, Edit, Trash2, Globe, MapPin, DollarSign, Check } from "lucide-react";
 import AdminLayout from "@/components/admin/AdminLayout";
 
 interface Country {
@@ -21,6 +21,7 @@ interface Country {
   description_en?: string | null;
   flag_url?: string | null;
   image_url?: string | null;
+  capital?: string | null;
   language?: string | null;
   currency?: string | null;
   climate?: string | null;
@@ -32,6 +33,8 @@ interface Country {
   living_cost_min?: number | null;
   living_cost_max?: number | null;
   is_trending: boolean | null;
+  is_featured: boolean | null;
+  is_home: boolean | null;
   client_id?: string | null;
   created_at: string;
   updated_at: string;
@@ -51,6 +54,7 @@ const AdminCountries = () => {
     description_en: "",
     flag_url: "",
     image_url: "",
+    capital: "",
     language: "",
     currency: "",
     climate: "",
@@ -62,7 +66,10 @@ const AdminCountries = () => {
     living_cost_min: "",
     living_cost_max: "",
     is_trending: false,
+    is_featured: false,
+    is_home: false,
   });
+  const [newCity, setNewCity] = useState("");
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -80,7 +87,6 @@ const AdminCountries = () => {
           throw new Error("بيانات الجلسة غير صالحة");
         }
 
-        // التحقق من أن الجلسة لم تنتهي (30 دقيقة)
         const sessionAge = Date.now() - (sessionData.timestamp || 0);
         if (sessionAge > 30 * 60 * 1000) {
           localStorage.removeItem("manager_session");
@@ -130,6 +136,27 @@ const AdminCountries = () => {
     setFormData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value,
+    }));
+  };
+
+  const handleCityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setNewCity(e.target.value);
+  };
+
+  const addCity = () => {
+    if (newCity.trim() && !formData.popular_cities.includes(newCity.trim())) {
+      setFormData(prev => ({
+        ...prev,
+        popular_cities: [...prev.popular_cities, newCity.trim()]
+      }));
+      setNewCity("");
+    }
+  };
+
+  const removeCity = (cityToRemove: string) => {
+    setFormData(prev => ({
+      ...prev,
+      popular_cities: prev.popular_cities.filter(city => city !== cityToRemove)
     }));
   };
 
@@ -201,6 +228,7 @@ const AdminCountries = () => {
       description_en: country.description_en || "",
       flag_url: country.flag_url || "",
       image_url: country.image_url || "",
+      capital: country.capital || "",
       language: country.language || "",
       currency: country.currency || "",
       climate: country.climate || "",
@@ -212,6 +240,8 @@ const AdminCountries = () => {
       living_cost_min: country.living_cost_min?.toString() || "",
       living_cost_max: country.living_cost_max?.toString() || "",
       is_trending: country.is_trending || false,
+      is_featured: country.is_featured || false,
+      is_home: country.is_home || false,
     });
     setShowForm(true);
   };
@@ -261,6 +291,7 @@ const AdminCountries = () => {
       description_en: "",
       flag_url: "",
       image_url: "",
+      capital: "",
       language: "",
       currency: "",
       climate: "",
@@ -272,6 +303,8 @@ const AdminCountries = () => {
       living_cost_min: "",
       living_cost_max: "",
       is_trending: false,
+      is_featured: false,
+      is_home: false,
     });
     setEditingCountry(null);
     setShowForm(false);
@@ -323,7 +356,7 @@ const AdminCountries = () => {
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="name_ar">الاسم بالعربية</Label>
+                    <Label htmlFor="name_ar">الاسم بالعربية *</Label>
                     <Input
                       id="name_ar"
                       name="name_ar"
@@ -333,7 +366,7 @@ const AdminCountries = () => {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="name_en">الاسم بالإنجليزية</Label>
+                    <Label htmlFor="name_en">الاسم بالإنجليزية *</Label>
                     <Input
                       id="name_en"
                       name="name_en"
@@ -343,13 +376,22 @@ const AdminCountries = () => {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="slug">الرابط المختصر</Label>
+                    <Label htmlFor="slug">الرابط المختصر *</Label>
                     <Input
                       id="slug"
                       name="slug"
                       value={formData.slug}
                       onChange={handleInputChange}
                       required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="capital">العاصمة</Label>
+                    <Input
+                      id="capital"
+                      name="capital"
+                      value={formData.capital}
+                      onChange={handleInputChange}
                     />
                   </div>
                   <div>
@@ -379,6 +421,24 @@ const AdminCountries = () => {
                       onChange={handleInputChange}
                     />
                   </div>
+                  <div>
+                    <Label htmlFor="flag_url">رابط علم الدولة</Label>
+                    <Input
+                      id="flag_url"
+                      name="flag_url"
+                      value={formData.flag_url}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="image_url">رابط صورة الدولة</Label>
+                    <Input
+                      id="image_url"
+                      name="image_url"
+                      value={formData.image_url}
+                      onChange={handleInputChange}
+                    />
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -402,6 +462,59 @@ const AdminCountries = () => {
                       rows={4}
                     />
                   </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="visa_requirements_ar">متطلبات التأشيرة بالعربية</Label>
+                    <Textarea
+                      id="visa_requirements_ar"
+                      name="visa_requirements_ar"
+                      value={formData.visa_requirements_ar}
+                      onChange={handleInputChange}
+                      rows={4}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="visa_requirements_en">متطلبات التأشيرة بالإنجليزية</Label>
+                    <Textarea
+                      id="visa_requirements_en"
+                      name="visa_requirements_en"
+                      value={formData.visa_requirements_en}
+                      onChange={handleInputChange}
+                      rows={4}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>المدن الشهيرة</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      value={newCity}
+                      onChange={handleCityChange}
+                      placeholder="أضف مدينة جديدة"
+                    />
+                    <Button type="button" onClick={addCity}>
+                      إضافة
+                    </Button>
+                  </div>
+                  {formData.popular_cities.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {formData.popular_cities.map((city) => (
+                        <Badge key={city} className="flex items-center gap-1">
+                          {city}
+                          <button
+                            type="button"
+                            onClick={() => removeCity(city)}
+                            className="text-red-500 hover:text-red-700"
+                          >
+                            ×
+                          </button>
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -447,6 +560,42 @@ const AdminCountries = () => {
                   </div>
                 </div>
 
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="is_trending"
+                      name="is_trending"
+                      checked={formData.is_trending}
+                      onChange={handleInputChange}
+                      className="w-4 h-4"
+                    />
+                    <Label htmlFor="is_trending">دولة رائجة</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="is_featured"
+                      name="is_featured"
+                      checked={formData.is_featured}
+                      onChange={handleInputChange}
+                      className="w-4 h-4"
+                    />
+                    <Label htmlFor="is_featured">دولة مميزة</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="is_home"
+                      name="is_home"
+                      checked={formData.is_home}
+                      onChange={handleInputChange}
+                      className="w-4 h-4"
+                    />
+                    <Label htmlFor="is_home">عرض في الصفحة الرئيسية</Label>
+                  </div>
+                </div>
+
                 <div className="flex gap-4">
                   <Button type="submit">
                     {editingCountry ? "تحديث" : "إضافة"}
@@ -469,6 +618,7 @@ const AdminCountries = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>الاسم</TableHead>
+                  <TableHead>العاصمة</TableHead>
                   <TableHead>اللغة</TableHead>
                   <TableHead>العملة</TableHead>
                   <TableHead>تكلفة الدراسة</TableHead>
@@ -485,6 +635,7 @@ const AdminCountries = () => {
                         <div className="text-sm text-muted-foreground">{country.name_en}</div>
                       </div>
                     </TableCell>
+                    <TableCell>{country.capital}</TableCell>
                     <TableCell>{country.language}</TableCell>
                     <TableCell>{country.currency}</TableCell>
                     <TableCell>
@@ -495,7 +646,11 @@ const AdminCountries = () => {
                       )}
                     </TableCell>
                     <TableCell>
-                      {country.is_trending && <Badge variant="secondary">رائج</Badge>}
+                      <div className="flex flex-wrap gap-1">
+                        {country.is_trending && <Badge variant="secondary">رائج</Badge>}
+                        {country.is_featured && <Badge variant="outline">مميز</Badge>}
+                        {country.is_home && <Badge>رئيسية</Badge>}
+                      </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-2">

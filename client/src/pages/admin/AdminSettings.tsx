@@ -5,10 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Save, Palette, Upload, Globe, Mail, Phone, MapPin, Facebook, Instagram, Twitter, Linkedin } from "lucide-react";
+import { Save, Palette, Globe, Mail, Phone, MapPin, Facebook, Instagram, Twitter, Linkedin, Youtube, Tiktok, Snapchat } from "lucide-react";
 import AdminLayout from "@/components/admin/AdminLayout";
 
 interface SiteSettings {
@@ -16,17 +17,32 @@ interface SiteSettings {
   client_id: string;
   site_name_ar: string;
   site_name_en: string;
+  tagline_ar?: string;
+  tagline_en?: string;
   logo_url?: string;
+  logo_animation?: string;
   primary_color_1: string;
   primary_color_2: string;
   primary_color_3: string;
   whatsapp_number?: string;
+  whatsapp_title?: string;
+  whatsapp_description?: string;
   email?: string;
+  phone_numbers?: string[];
+  email_addresses?: string[];
   office_location?: string;
+  working_hours?: string;
   facebook_url?: string;
   instagram_url?: string;
   twitter_url?: string;
   linkedin_url?: string;
+  youtube_url?: string;
+  tiktok_url?: string;
+  snapchat_url?: string;
+  map_link?: string;
+  map_placeholder?: string;
+  newsletter_title?: string;
+  newsletter_description?: string;
   show_countries_section: boolean;
   show_universities_section: boolean;
   show_programs_section: boolean;
@@ -39,23 +55,39 @@ const AdminSettings = () => {
     client_id: "",
     site_name_ar: "موقع الدراسة بالخارج",
     site_name_en: "Study Abroad Site",
+    tagline_ar: "شعار الموقع بالعربية",
+    tagline_en: "Site tagline in English",
     logo_url: "",
+    logo_animation: "",
     primary_color_1: "#3b82f6",
     primary_color_2: "#1e40af",
     primary_color_3: "#1e3a8a",
     whatsapp_number: "",
+    whatsapp_title: "تواصل معنا عبر واتساب",
+    whatsapp_description: "نحن متاحون للرد على استفساراتك عبر واتساب",
     email: "",
+    phone_numbers: [],
+    email_addresses: [],
     office_location: "",
+    working_hours: "الأحد - الخميس: 9 ص - 5 م",
     facebook_url: "",
     instagram_url: "",
     twitter_url: "",
     linkedin_url: "",
+    youtube_url: "",
+    tiktok_url: "",
+    snapchat_url: "",
+    map_link: "",
+    map_placeholder: "",
+    newsletter_title: "النشرة الإخبارية",
+    newsletter_description: "اشترك في نشرتنا البريدية لتصلك آخر العروض والأخبار",
     show_countries_section: true,
     show_universities_section: true,
     show_programs_section: true,
     show_articles_section: true,
     show_testimonials_section: true,
   });
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -76,7 +108,6 @@ const AdminSettings = () => {
           throw new Error("بيانات الجلسة غير صالحة");
         }
 
-        // التحقق من أن الجلسة لم تنتهي (30 دقيقة)
         const sessionAge = Date.now() - (sessionData.timestamp || 0);
         if (sessionAge > 30 * 60 * 1000) {
           localStorage.removeItem("manager_session");
@@ -111,7 +142,6 @@ const AdminSettings = () => {
       if (data) {
         setSettings(data);
       } else {
-        // Create default settings
         setSettings(prev => ({ ...prev, client_id: clientId }));
       }
     } catch (error) {
@@ -132,6 +162,13 @@ const AdminSettings = () => {
     setSettings(prev => ({
       ...prev,
       [name]: value,
+    }));
+  };
+
+  const handleArrayInputChange = (name: string, value: string) => {
+    setSettings(prev => ({
+      ...prev,
+      [name]: value.split(',').map(item => item.trim()),
     }));
   };
 
@@ -262,15 +299,47 @@ const AdminSettings = () => {
                 />
               </div>
             </div>
-            <div>
-              <Label htmlFor="logo_url">رابط اللوجو</Label>
-              <Input
-                id="logo_url"
-                name="logo_url"
-                value={settings.logo_url || ""}
-                onChange={handleInputChange}
-                placeholder="https://example.com/logo.png"
-              />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="tagline_ar">الشعار بالعربية</Label>
+                <Input
+                  id="tagline_ar"
+                  name="tagline_ar"
+                  value={settings.tagline_ar || ""}
+                  onChange={handleInputChange}
+                />
+              </div>
+              <div>
+                <Label htmlFor="tagline_en">الشعار بالإنجليزية</Label>
+                <Input
+                  id="tagline_en"
+                  name="tagline_en"
+                  value={settings.tagline_en || ""}
+                  onChange={handleInputChange}
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="logo_url">رابط اللوجو</Label>
+                <Input
+                  id="logo_url"
+                  name="logo_url"
+                  value={settings.logo_url || ""}
+                  onChange={handleInputChange}
+                  placeholder="https://example.com/logo.png"
+                />
+              </div>
+              <div>
+                <Label htmlFor="logo_animation">رابط لوجو متحرك</Label>
+                <Input
+                  id="logo_animation"
+                  name="logo_animation"
+                  value={settings.logo_animation || ""}
+                  onChange={handleInputChange}
+                  placeholder="https://example.com/logo-animation.gif"
+                />
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -358,7 +427,30 @@ const AdminSettings = () => {
                 />
               </div>
               <div>
-                <Label htmlFor="email">البريد الإلكتروني</Label>
+                <Label htmlFor="whatsapp_title">عنوان الواتساب</Label>
+                <Input
+                  id="whatsapp_title"
+                  name="whatsapp_title"
+                  value={settings.whatsapp_title || ""}
+                  onChange={handleInputChange}
+                  placeholder="تواصل معنا عبر واتساب"
+                />
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="whatsapp_description">وصف الواتساب</Label>
+              <Textarea
+                id="whatsapp_description"
+                name="whatsapp_description"
+                value={settings.whatsapp_description || ""}
+                onChange={handleInputChange}
+                placeholder="نحن متاحون للرد على استفساراتك عبر واتساب"
+                rows={2}
+              />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="email">البريد الإلكتروني الرئيسي</Label>
                 <Input
                   id="email"
                   name="email"
@@ -368,6 +460,34 @@ const AdminSettings = () => {
                   placeholder="info@example.com"
                 />
               </div>
+              <div>
+                <Label htmlFor="working_hours">ساعات العمل</Label>
+                <Input
+                  id="working_hours"
+                  name="working_hours"
+                  value={settings.working_hours || ""}
+                  onChange={handleInputChange}
+                  placeholder="الأحد - الخميس: 9 ص - 5 م"
+                />
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="phone_numbers">أرقام الهاتف (مفصولة بفواصل)</Label>
+              <Input
+                id="phone_numbers"
+                value={settings.phone_numbers?.join(', ') || ""}
+                onChange={(e) => handleArrayInputChange("phone_numbers", e.target.value)}
+                placeholder="+966501234567, +966502345678"
+              />
+            </div>
+            <div>
+              <Label htmlFor="email_addresses">عنواين البريد الإلكتروني (مفصولة بفواصل)</Label>
+              <Input
+                id="email_addresses"
+                value={settings.email_addresses?.join(', ') || ""}
+                onChange={(e) => handleArrayInputChange("email_addresses", e.target.value)}
+                placeholder="info@example.com, support@example.com"
+              />
             </div>
             <div>
               <Label htmlFor="office_location">عنوان المكتب</Label>
@@ -379,6 +499,40 @@ const AdminSettings = () => {
                 placeholder="الرياض، المملكة العربية السعودية"
                 rows={2}
               />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Map & Location */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <MapPin className="w-5 h-5" />
+              الخريطة والموقع
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="map_link">رابط الخريطة</Label>
+                <Input
+                  id="map_link"
+                  name="map_link"
+                  value={settings.map_link || ""}
+                  onChange={handleInputChange}
+                  placeholder="https://maps.google.com/..."
+                />
+              </div>
+              <div>
+                <Label htmlFor="map_placeholder">صورة الخريطة البديلة</Label>
+                <Input
+                  id="map_placeholder"
+                  name="map_placeholder"
+                  value={settings.map_placeholder || ""}
+                  onChange={handleInputChange}
+                  placeholder="https://example.com/map-placeholder.jpg"
+                />
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -433,12 +587,81 @@ const AdminSettings = () => {
                   placeholder="https://linkedin.com/company/yourpage"
                 />
               </div>
+              <div>
+                <Label htmlFor="youtube_url">يوتيوب</Label>
+                <Input
+                  id="youtube_url"
+                  name="youtube_url"
+                  value={settings.youtube_url || ""}
+                  onChange={handleInputChange}
+                  placeholder="https://youtube.com/yourchannel"
+                />
+              </div>
+              <div>
+                <Label htmlFor="tiktok_url">تيك توك</Label>
+                <Input
+                  id="tiktok_url"
+                  name="tiktok_url"
+                  value={settings.tiktok_url || ""}
+                  onChange={handleInputChange}
+                  placeholder="https://tiktok.com/@yourpage"
+                />
+              </div>
+              <div>
+                <Label htmlFor="snapchat_url">سناب شات</Label>
+                <Input
+                  id="snapchat_url"
+                  name="snapchat_url"
+                  value={settings.snapchat_url || ""}
+                  onChange={handleInputChange}
+                  placeholder="https://snapchat.com/add/yourpage"
+                />
+              </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Page Visibility */}
+        {/* Newsletter */}
         <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Mail className="w-5 h-5" />
+              النشرة البريدية
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="newsletter_title">عنوان النشرة</Label>
+                <Input
+                  id="newsletter_title"
+                  name="newsletter_title"
+                  value={settings.newsletter_title || ""}
+                  onChange={handleInputChange}
+                  placeholder="النشرة الإخبارية"
+                />
+              </div>
+              <div>
+                <Label htmlFor="newsletter_description">وصف النشرة</Label>
+                <Input
+                  id="newsletter_description"
+                  name="newsletter_description"
+                  value={settings.newsletter_description || ""}
+                  onChange={handleInputChange}
+                  placeholder="اشترك في نشرتنا البريدية لتصلك آخر العروض والأخبار"
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Page Visibility - Coming Soon */}
+        <Card className="relative opacity-70">
+          <div className="absolute inset-0 bg-gray-100/50 flex items-center justify-center">
+            <Badge variant="secondary" className="text-lg py-2 px-4">
+              قريبًا
+            </Badge>
+          </div>
           <CardHeader>
             <CardTitle>إظهار/إخفاء أقسام الموقع</CardTitle>
           </CardHeader>
@@ -457,6 +680,7 @@ const AdminSettings = () => {
                     id={section.key}
                     checked={settings[section.key as keyof SiteSettings] as boolean}
                     onCheckedChange={(checked) => handleSwitchChange(section.key, checked)}
+                    disabled
                   />
                 </div>
               ))}

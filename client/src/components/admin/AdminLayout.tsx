@@ -1,8 +1,18 @@
 import { ReactNode, useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { LogOut, Home, Globe, GraduationCap, BookOpen, FileText, MessageSquare, Settings, Users, Star } from "lucide-react";
+import {
+  LogOut,
+  Home,
+  Globe,
+  GraduationCap,
+  BookOpen,
+  FileText,
+  MessageSquare,
+  Settings,
+  Users,
+  Star
+} from "lucide-react";
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -12,8 +22,8 @@ interface AdminSession {
   id: string;
   email: string;
   full_name: string;
-  client_id: string | null;
-  client: {
+  client_id?: string | null;
+  client?: {
     name: string;
     slug: string;
   } | null;
@@ -21,32 +31,25 @@ interface AdminSession {
 
 const AdminLayout = ({ children }: AdminLayoutProps) => {
   const [session, setSession] = useState<AdminSession | null>(null);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const location = useLocation();
 
   useEffect(() => {
-    // التحقق من وجود جلسة صالحة
-    const checkSession = () => {
-      const storedSession = sessionStorage.getItem("admin_session");
-      if (!storedSession) {
-        navigate("/admin/dashboard");
-        return;
-      }
-
+    const storedSession = sessionStorage.getItem("admin_session");
+    if (storedSession) {
       try {
-        const sessionData = JSON.parse(storedSession);
+        const sessionData: AdminSession = JSON.parse(storedSession);
         setSession(sessionData);
       } catch (error) {
         console.error("Error parsing session data:", error);
-        navigate("/admin/dashboard");
+        setSession(null);
       }
-    };
-
-    checkSession();
-  }, [navigate]);
+    }
+    setLoading(false);
+  }, []);
 
   const handleLogout = () => {
-    // مسح الجلسة من sessionStorage
     sessionStorage.removeItem("admin_session");
     navigate("/admin/dashboard");
   };
@@ -64,8 +67,12 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
     { icon: Settings, label: "إعدادات الموقع", path: "/admin/settings" },
   ];
 
-  if (!session) {
-    return null; // أو يمكنك عرض شاشة تحميل هنا
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <p>جار التحميل...</p>
+      </div>
+    );
   }
 
   return (
@@ -76,11 +83,11 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
           <div>
             <h1 className="text-xl font-bold">لوحة التحكم</h1>
             <p className="text-sm text-muted-foreground">
-              {session.client ? session.client.name : "مدير النظام"}
+              {session?.client?.name || "مدير النظام"}
             </p>
           </div>
           <div className="flex items-center gap-4">
-            <span className="text-sm">{session.full_name || session.email}</span>
+            <span className="text-sm">{session?.full_name || session?.email || "زائر"}</span>
             <Button onClick={handleLogout} variant="outline" size="sm">
               <LogOut className="w-4 h-4 ml-2" />
               تسجيل الخروج
@@ -114,9 +121,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 p-6">
-          {children}
-        </main>
+        <main className="flex-1 p-6">{children}</main>
       </div>
     </div>
   );

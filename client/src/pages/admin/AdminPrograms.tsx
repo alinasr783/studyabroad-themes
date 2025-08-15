@@ -8,8 +8,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Edit, Trash2 } from "lucide-react";
+import { Plus, Edit, Trash2, Calendar, Clock, Award, BookOpen, GraduationCap, DollarSign, MapPin } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import AdminLayout from "@/components/admin/AdminLayout";
@@ -26,18 +27,26 @@ interface Program {
   duration_years?: number;
   duration_months?: number;
   tuition_fee?: number;
+  preparation_fee?: number;
   language?: string;
+  study_mode?: string;
+  program_type?: string;
+  credit_hours?: number;
   requirements_ar?: string;
   requirements_en?: string;
   career_prospects_ar?: string;
   career_prospects_en?: string;
+  scholarship_info_ar?: string;
+  scholarship_info_en?: string;
   is_featured: boolean;
   start_date?: string;
   application_deadline?: string;
+  video_url?: string;
   country_id?: string;
   university_id?: string;
   client_id?: string;
   created_at: string;
+  updated_at: string;
 }
 
 interface Country {
@@ -74,14 +83,21 @@ const AdminPrograms = () => {
     duration_years: "",
     duration_months: "",
     tuition_fee: "",
+    preparation_fee: "",
     language: "",
+    study_mode: "",
+    program_type: "",
+    credit_hours: "",
     requirements_ar: "",
     requirements_en: "",
     career_prospects_ar: "",
     career_prospects_en: "",
+    scholarship_info_ar: "",
+    scholarship_info_en: "",
     is_featured: false,
     start_date: "",
     application_deadline: "",
+    video_url: "",
     country_id: "",
     university_id: "",
   });
@@ -100,7 +116,6 @@ const AdminPrograms = () => {
           throw new Error("بيانات الجلسة غير صالحة");
         }
 
-        // التحقق من أن الجلسة لم تنتهي (30 دقيقة)
         const sessionAge = Date.now() - (sessionData.timestamp || 0);
         if (sessionAge > 30 * 60 * 1000) {
           localStorage.removeItem("manager_session");
@@ -217,7 +232,9 @@ const AdminPrograms = () => {
         client_id,
         duration_years: formData.duration_years ? parseInt(formData.duration_years) : null,
         duration_months: formData.duration_months ? parseInt(formData.duration_months) : null,
-        tuition_fee: formData.tuition_fee ? parseInt(formData.tuition_fee) : null,
+        tuition_fee: formData.tuition_fee ? parseFloat(formData.tuition_fee) : null,
+        preparation_fee: formData.preparation_fee ? parseFloat(formData.preparation_fee) : null,
+        credit_hours: formData.credit_hours ? parseInt(formData.credit_hours) : null,
         start_date: formData.start_date || null,
         application_deadline: formData.application_deadline || null,
         country_id: formData.country_id || null,
@@ -276,14 +293,21 @@ const AdminPrograms = () => {
       duration_years: program.duration_years?.toString() || "",
       duration_months: program.duration_months?.toString() || "",
       tuition_fee: program.tuition_fee?.toString() || "",
+      preparation_fee: program.preparation_fee?.toString() || "",
       language: program.language || "",
+      study_mode: program.study_mode || "",
+      program_type: program.program_type || "",
+      credit_hours: program.credit_hours?.toString() || "",
       requirements_ar: program.requirements_ar || "",
       requirements_en: program.requirements_en || "",
       career_prospects_ar: program.career_prospects_ar || "",
       career_prospects_en: program.career_prospects_en || "",
-      is_featured: program.is_featured,
+      scholarship_info_ar: program.scholarship_info_ar || "",
+      scholarship_info_en: program.scholarship_info_en || "",
+      is_featured: program.is_featured || false,
       start_date: program.start_date || "",
       application_deadline: program.application_deadline || "",
+      video_url: program.video_url || "",
       country_id: program.country_id || "",
       university_id: program.university_id || "",
     });
@@ -338,14 +362,21 @@ const AdminPrograms = () => {
       duration_years: "",
       duration_months: "",
       tuition_fee: "",
+      preparation_fee: "",
       language: "",
+      study_mode: "",
+      program_type: "",
+      credit_hours: "",
       requirements_ar: "",
       requirements_en: "",
       career_prospects_ar: "",
       career_prospects_en: "",
+      scholarship_info_ar: "",
+      scholarship_info_en: "",
       is_featured: false,
       start_date: "",
       application_deadline: "",
+      video_url: "",
       country_id: "",
       university_id: "",
     });
@@ -392,7 +423,7 @@ const AdminPrograms = () => {
               </Button>
             </DialogTrigger>
 
-            <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>
                   {editingProgram ? "تعديل البرنامج" : "إضافة برنامج جديد"}
@@ -422,10 +453,13 @@ const AdminPrograms = () => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <Label htmlFor="degree_level">مستوى الدرجة *</Label>
-                    <Select value={formData.degree_level} onValueChange={(value) => handleInputChange("degree_level", value)}>
+                    <Select 
+                      value={formData.degree_level} 
+                      onValueChange={(value) => handleInputChange("degree_level", value)}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="اختر مستوى الدرجة" />
                       </SelectTrigger>
@@ -447,14 +481,24 @@ const AdminPrograms = () => {
                       required
                     />
                   </div>
+
+                  <div>
+                    <Label htmlFor="program_type">نوع البرنامج</Label>
+                    <Input
+                      id="program_type"
+                      value={formData.program_type}
+                      onChange={(e) => handleInputChange("program_type", e.target.value)}
+                    />
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <div>
                     <Label htmlFor="duration_years">المدة (سنوات)</Label>
                     <Input
                       id="duration_years"
                       type="number"
+                      min="0"
                       value={formData.duration_years}
                       onChange={(e) => handleInputChange("duration_years", e.target.value)}
                     />
@@ -465,18 +509,64 @@ const AdminPrograms = () => {
                     <Input
                       id="duration_months"
                       type="number"
+                      min="0"
                       value={formData.duration_months}
                       onChange={(e) => handleInputChange("duration_months", e.target.value)}
                     />
                   </div>
 
                   <div>
-                    <Label htmlFor="tuition_fee">الرسوم الدراسية</Label>
+                    <Label htmlFor="credit_hours">الساعات المعتمدة</Label>
+                    <Input
+                      id="credit_hours"
+                      type="number"
+                      min="0"
+                      value={formData.credit_hours}
+                      onChange={(e) => handleInputChange("credit_hours", e.target.value)}
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="study_mode">نظام الدراسة</Label>
+                    <Input
+                      id="study_mode"
+                      value={formData.study_mode}
+                      onChange={(e) => handleInputChange("study_mode", e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <Label htmlFor="tuition_fee">الرسوم الدراسية ($)</Label>
                     <Input
                       id="tuition_fee"
                       type="number"
+                      min="0"
+                      step="0.01"
                       value={formData.tuition_fee}
                       onChange={(e) => handleInputChange("tuition_fee", e.target.value)}
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="preparation_fee">رسوم التحضير ($)</Label>
+                    <Input
+                      id="preparation_fee"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={formData.preparation_fee}
+                      onChange={(e) => handleInputChange("preparation_fee", e.target.value)}
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="language">لغة الدراسة</Label>
+                    <Input
+                      id="language"
+                      value={formData.language}
+                      onChange={(e) => handleInputChange("language", e.target.value)}
                     />
                   </div>
                 </div>
@@ -484,7 +574,10 @@ const AdminPrograms = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="country_id">الدولة</Label>
-                    <Select value={formData.country_id} onValueChange={(value) => handleInputChange("country_id", value)}>
+                    <Select 
+                      value={formData.country_id} 
+                      onValueChange={(value) => handleInputChange("country_id", value)}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="اختر الدولة" />
                       </SelectTrigger>
@@ -500,7 +593,10 @@ const AdminPrograms = () => {
 
                   <div>
                     <Label htmlFor="university_id">الجامعة</Label>
-                    <Select value={formData.university_id} onValueChange={(value) => handleInputChange("university_id", value)}>
+                    <Select 
+                      value={formData.university_id} 
+                      onValueChange={(value) => handleInputChange("university_id", value)}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="اختر الجامعة" />
                       </SelectTrigger>
@@ -515,13 +611,44 @@ const AdminPrograms = () => {
                   </div>
                 </div>
 
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="start_date">تاريخ البدء</Label>
+                    <Input
+                      id="start_date"
+                      type="date"
+                      value={formData.start_date}
+                      onChange={(e) => handleInputChange("start_date", e.target.value)}
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="application_deadline">موعد التقديم</Label>
+                    <Input
+                      id="application_deadline"
+                      type="date"
+                      value={formData.application_deadline}
+                      onChange={(e) => handleInputChange("application_deadline", e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="video_url">رابط الفيديو</Label>
+                  <Input
+                    id="video_url"
+                    value={formData.video_url}
+                    onChange={(e) => handleInputChange("video_url", e.target.value)}
+                  />
+                </div>
+
                 <div>
                   <Label htmlFor="description_ar">الوصف بالعربية</Label>
                   <Textarea
                     id="description_ar"
                     value={formData.description_ar}
                     onChange={(e) => handleInputChange("description_ar", e.target.value)}
-                    rows={3}
+                    rows={4}
                   />
                 </div>
 
@@ -531,16 +658,91 @@ const AdminPrograms = () => {
                     id="description_en"
                     value={formData.description_en}
                     onChange={(e) => handleInputChange("description_en", e.target.value)}
-                    rows={3}
+                    rows={4}
                   />
                 </div>
 
-                <div className="flex justify-end gap-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="requirements_ar">المتطلبات بالعربية</Label>
+                    <Textarea
+                      id="requirements_ar"
+                      value={formData.requirements_ar}
+                      onChange={(e) => handleInputChange("requirements_ar", e.target.value)}
+                      rows={3}
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="requirements_en">المتطلبات بالإنجليزية</Label>
+                    <Textarea
+                      id="requirements_en"
+                      value={formData.requirements_en}
+                      onChange={(e) => handleInputChange("requirements_en", e.target.value)}
+                      rows={3}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="career_prospects_ar">الآفاق الوظيفية بالعربية</Label>
+                    <Textarea
+                      id="career_prospects_ar"
+                      value={formData.career_prospects_ar}
+                      onChange={(e) => handleInputChange("career_prospects_ar", e.target.value)}
+                      rows={3}
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="career_prospects_en">الآفاق الوظيفية بالإنجليزية</Label>
+                    <Textarea
+                      id="career_prospects_en"
+                      value={formData.career_prospects_en}
+                      onChange={(e) => handleInputChange("career_prospects_en", e.target.value)}
+                      rows={3}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="scholarship_info_ar">معلومات المنح بالعربية</Label>
+                    <Textarea
+                      id="scholarship_info_ar"
+                      value={formData.scholarship_info_ar}
+                      onChange={(e) => handleInputChange("scholarship_info_ar", e.target.value)}
+                      rows={3}
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="scholarship_info_en">معلومات المنح بالإنجليزية</Label>
+                    <Textarea
+                      id="scholarship_info_en"
+                      value={formData.scholarship_info_en}
+                      onChange={(e) => handleInputChange("scholarship_info_en", e.target.value)}
+                      rows={3}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="is_featured"
+                    checked={formData.is_featured}
+                    onCheckedChange={(checked) => handleInputChange("is_featured", checked)}
+                  />
+                  <Label htmlFor="is_featured">وضع مميز</Label>
+                </div>
+
+                <div className="flex justify-end gap-4">
                   <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
                     إلغاء
                   </Button>
                   <Button type="submit">
-                    {editingProgram ? "تحديث" : "إضافة"}
+                    {editingProgram ? "حفظ التغييرات" : "إضافة البرنامج"}
                   </Button>
                 </div>
               </form>
@@ -578,18 +780,38 @@ const AdminPrograms = () => {
                     <TableCell>{program.degree_level}</TableCell>
                     <TableCell>{program.field_of_study}</TableCell>
                     <TableCell>
-                      {program.duration_years && `${program.duration_years} سنة`}
-                      {program.duration_months && ` ${program.duration_months} شهر`}
+                      <div className="flex items-center gap-1">
+                        {program.duration_years && (
+                          <Badge variant="outline" className="flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            {program.duration_years} سنة
+                          </Badge>
+                        )}
+                        {program.duration_months && (
+                          <Badge variant="outline" className="flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            {program.duration_months} شهر
+                          </Badge>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>
-                      {program.tuition_fee ? `$${program.tuition_fee.toLocaleString()}` : "غير محدد"}
+                      {program.tuition_fee ? (
+                        <div className="flex items-center gap-1">
+                          <DollarSign className="w-4 h-4" />
+                          {program.tuition_fee.toLocaleString()}
+                        </div>
+                      ) : "غير محدد"}
                     </TableCell>
                     <TableCell>
                       {universities.find(u => u.id === program.university_id)?.name_ar || "غير محدد"}
                     </TableCell>
                     <TableCell>
                       {program.is_featured ? (
-                        <Badge>مميز</Badge>
+                        <Badge className="flex items-center gap-1">
+                          <Award className="w-3 h-3" />
+                          مميز
+                        </Badge>
                       ) : (
                         <Badge variant="secondary">عادي</Badge>
                       )}
@@ -604,7 +826,7 @@ const AdminPrograms = () => {
                           <Edit className="w-4 h-4" />
                         </Button>
                         <Button
-                          variant="outline"
+                          variant="destructive"
                           size="sm"
                           onClick={() => handleDelete(program.id)}
                         >

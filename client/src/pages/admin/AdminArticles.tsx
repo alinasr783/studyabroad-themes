@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Edit, Trash2, Eye } from "lucide-react";
+import { Plus, Edit, Trash2, Eye, Clock, Tag, User, Image, BookOpen } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import AdminLayout from "@/components/admin/AdminLayout";
@@ -34,6 +34,7 @@ interface Article {
   reading_time?: number | null;
   created_at: string;
   updated_at: string;
+  client_id?: string | null;
 }
 
 const AdminArticles = () => {
@@ -77,7 +78,6 @@ const AdminArticles = () => {
           throw new Error("بيانات الجلسة غير صالحة");
         }
 
-        // التحقق من أن الجلسة لم تنتهي (30 دقيقة)
         const sessionAge = Date.now() - (sessionData.timestamp || 0);
         if (sessionAge > 30 * 60 * 1000) {
           localStorage.removeItem("manager_session");
@@ -163,6 +163,7 @@ const AdminArticles = () => {
         client_id,
         tags: tagsArray,
         reading_time: formData.reading_time ? parseInt(formData.reading_time) : null,
+        views_count: editingArticle?.views_count || 0,
       };
 
       if (editingArticle) {
@@ -338,7 +339,165 @@ const AdminArticles = () => {
               </DialogHeader>
 
               <form onSubmit={handleSubmit} className="space-y-4">
-                {/* ... (بقية حقول النموذج كما هي) ... */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="title_ar">العنوان بالعربية *</Label>
+                    <Input
+                      id="title_ar"
+                      value={formData.title_ar}
+                      onChange={(e) => handleInputChange("title_ar", e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="title_en">العنوان بالإنجليزية</Label>
+                    <Input
+                      id="title_en"
+                      value={formData.title_en}
+                      onChange={(e) => handleInputChange("title_en", e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="slug">الرابط المختصر *</Label>
+                    <Input
+                      id="slug"
+                      value={formData.slug}
+                      onChange={(e) => handleInputChange("slug", e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="category">التصنيف</Label>
+                    <Input
+                      id="category"
+                      value={formData.category}
+                      onChange={(e) => handleInputChange("category", e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="excerpt_ar">المقتطف بالعربية</Label>
+                    <Textarea
+                      id="excerpt_ar"
+                      value={formData.excerpt_ar}
+                      onChange={(e) => handleInputChange("excerpt_ar", e.target.value)}
+                      rows={3}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="excerpt_en">المقتطف بالإنجليزية</Label>
+                    <Textarea
+                      id="excerpt_en"
+                      value={formData.excerpt_en}
+                      onChange={(e) => handleInputChange("excerpt_en", e.target.value)}
+                      rows={3}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="content_ar">المحتوى بالعربية *</Label>
+                  <Textarea
+                    id="content_ar"
+                    value={formData.content_ar}
+                    onChange={(e) => handleInputChange("content_ar", e.target.value)}
+                    rows={6}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="content_en">المحتوى بالإنجليزية</Label>
+                  <Textarea
+                    id="content_en"
+                    value={formData.content_en}
+                    onChange={(e) => handleInputChange("content_en", e.target.value)}
+                    rows={6}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="featured_image">رابط الصورة الرئيسية</Label>
+                    <Input
+                      id="featured_image"
+                      value={formData.featured_image}
+                      onChange={(e) => handleInputChange("featured_image", e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="reading_time">وقت القراءة (دقائق)</Label>
+                    <Input
+                      id="reading_time"
+                      type="number"
+                      min="1"
+                      value={formData.reading_time}
+                      onChange={(e) => handleInputChange("reading_time", e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="author_name">اسم الكاتب</Label>
+                    <Input
+                      id="author_name"
+                      value={formData.author_name}
+                      onChange={(e) => handleInputChange("author_name", e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="author_avatar">رابط صورة الكاتب</Label>
+                    <Input
+                      id="author_avatar"
+                      value={formData.author_avatar}
+                      onChange={(e) => handleInputChange("author_avatar", e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="tags">الكلمات المفتاحية (مفصولة بفواصل)</Label>
+                  <Input
+                    id="tags"
+                    value={formData.tags}
+                    onChange={(e) => handleInputChange("tags", e.target.value)}
+                    placeholder="تعليم, جامعات, دراسة"
+                  />
+                </div>
+
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="is_published"
+                      checked={formData.is_published}
+                      onCheckedChange={(checked) => handleInputChange("is_published", checked)}
+                    />
+                    <Label htmlFor="is_published">نشر المقال</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="is_featured"
+                      checked={formData.is_featured}
+                      onCheckedChange={(checked) => handleInputChange("is_featured", checked)}
+                    />
+                    <Label htmlFor="is_featured">وضع مميز</Label>
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-4">
+                  <Button type="button" variant="outline" onClick={() => {
+                    resetForm();
+                    setShowForm(false);
+                  }}>
+                    إلغاء
+                  </Button>
+                  <Button type="submit">
+                    {editingArticle ? "حفظ التغييرات" : "إضافة المقال"}
+                  </Button>
+                </div>
               </form>
             </DialogContent>
           </Dialog>
@@ -365,17 +524,39 @@ const AdminArticles = () => {
                 {articles.map((article) => (
                   <TableRow key={article.id}>
                     <TableCell>
-                      <div>
-                        <div className="font-medium">{article.title_ar}</div>
-                        <div className="text-sm text-muted-foreground">{article.title_en}</div>
+                      <div className="flex items-center gap-3">
+                        {article.featured_image && (
+                          <img
+                            src={article.featured_image}
+                            alt={article.title_ar}
+                            className="w-10 h-10 object-cover rounded"
+                          />
+                        )}
+                        <div>
+                          <div className="font-medium">{article.title_ar}</div>
+                          <div className="text-sm text-muted-foreground">{article.title_en}</div>
+                        </div>
                       </div>
                     </TableCell>
-                    <TableCell>{article.author_name || "غير محدد"}</TableCell>
-                    <TableCell>{article.category || "غير محدد"}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        {article.author_avatar && (
+                          <img
+                            src={article.author_avatar}
+                            alt={article.author_name || "كاتب"}
+                            className="w-6 h-6 rounded-full"
+                          />
+                        )}
+                        {article.author_name || "غير محدد"}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {article.category || "غير محدد"}
+                    </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
                         <Eye className="w-4 h-4" />
-                        {article.views_count}
+                        {article.views_count || 0}
                       </div>
                     </TableCell>
                     <TableCell>
@@ -390,7 +571,17 @@ const AdminArticles = () => {
                         )}
                       </div>
                     </TableCell>
-                    <TableCell>{formatDate(article.created_at)}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1">
+                        {formatDate(article.created_at)}
+                        {article.reading_time && (
+                          <Badge variant="outline" className="flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            {article.reading_time} د
+                          </Badge>
+                        )}
+                      </div>
+                    </TableCell>
                     <TableCell>
                       <div className="flex gap-2">
                         <Button
@@ -401,7 +592,7 @@ const AdminArticles = () => {
                           <Edit className="w-4 h-4" />
                         </Button>
                         <Button
-                          variant="outline"
+                          variant="destructive"
                           size="sm"
                           onClick={() => handleDelete(article.id)}
                         >

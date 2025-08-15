@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,186 +9,481 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Globe, Palette, User, Mail, Lock, Building } from "lucide-react";
 
-const CreateClient = () => {
+type CreateClientForm = {
+  site_name: string;
+  client_name: string;
+  admin_email: string;
+  admin_password: string;
+  primary_color_1: string;
+  primary_color_2: string;
+  primary_color_3: string;
+  logo_url: string;
+  description: string;
+};
+
+type CreateVercelProjectResponse = {
+  projectId: string;
+  projectUrl?: string;
+  customDomain?: string;
+};
+
+type ClientRow = {
+  id: string;
+  name: string;
+  client_name: string;
+  logo_url: string | null;
+  description: string | null;
+  is_active: boolean;
+  vercel_project_id?: string | null;
+  vercel_url?: string | null;
+  custom_domain?: string | null;
+};
+
+const isValidEmail = (email: string): boolean => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return !!email && emailRegex.test(email.trim());
+};
+
+const isValidHexColor = (value: string): boolean => {
+  if (!value) return false;
+  const v = value.trim();
+  const hexRegex = /^#([0-9A-Fa-f]{3}){1,2}$/;
+  return hexRegex.test(v);
+};
+
+const cleanString = (s: string): string => (s ?? "").trim();
+
+const makeSlug = (name: string): string => {
+  return cleanString(name)
+    .toLowerCase()
+    .replace(/\s+/g, "-")
+    .replace(/[^a-z0-9\u0600-\u06FF-]/g, "")
+    .replace(/-+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 60);
+};
+
+const isStrongPasswordEnough = (p: string): boolean => {
+  return typeof p === "string" && p.length >= 6;
+};
+
+const isValidUrl = (s?: string): boolean => {
+  if (!s) return false;
+  try {
+    const u = new URL(s);
+    return u.protocol === "http:" || u.protocol === "https:";
+  } catch {
+    return false;
+  }
+};
+
+const stripSpaces = (s: string): string => s.replace(/\s+/g, "");
+
+const pushError = (errors: string[], msg: string) => {
+  if (msg && !errors.includes(msg)) errors.push(msg);
+};
+
+const CreateClient: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [deploymentLoading, setDeploymentLoading] = useState(false);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<CreateClientForm>({
     site_name: "",
     client_name: "",
-    slug: "",
     admin_email: "",
     admin_password: "",
     primary_color_1: "#3b82f6",
-    primary_color_2: "#1e40af", 
+    primary_color_2: "#1e40af",
     primary_color_3: "#1e3a8a",
     logo_url: "",
-    description: ""
+    description: "",
   });
-  
-  const { toast } = useToast();
+
   const navigate = useNavigate();
+  const { toast } = useToast();
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-    
-    // Auto-generate slug from site name
-    if (name === "site_name") {
-      const slug = value
-        .toLowerCase()
-        .replace(/[^\w\s-]/g, '') // Remove special characters
-        .replace(/\s+/g, '-') // Replace spaces with hyphens
-        .replace(/-+/g, '-') // Replace multiple hyphens with single
-        .trim();
-      setFormData(prev => ({ ...prev, slug }));
+  const siteSlug = useMemo(() => makeSlug(formData.site_name), [formData.site_name]);
+
+  const handleInputChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      const { name, value } = e.target;
+      if (name === "admin_email") {
+        setFormData((prev) => ({ ...prev, [name]: stripSpaces(value) }));
+        return;
+      }
+      if (name === "admin_password") {
+        setFormData((prev) => ({ ...prev, [name]: value }));
+        return;
+      }
+      setFormData((prev) => ({ ...prev, [name]: value }));
+    },
+    []
+  );
+
+  const handleColorChange = useCallback((colorName: keyof CreateClientForm, value: string) => {
+    setFormData((prev) => ({ ...prev, [colorName]: value }));
+  }, []);
+
+  const validateBeforeSubmit = useCallback((data: CreateClientForm): string[] => {
+    const errors: string[] = [];
+    if (!cleanString(data.site_name)) {
+      pushError(errors, "اسم الموقع مطلوب.");
     }
-  };
+    if (!cleanString(data.client_name)) {
+      pushError(errors, "اسم العميل مطلوب.");
+    }
+    if (!cleanString(data.admin_email)) {
+      pushError(errors, "البريد الإلكتروني مطلوب.");
+    }
+    if (!cleanString(data.admin_password)) {
+      pushError(errors, "كلمة المرور مطلوبة.");
+    }
+    if (data.admin_email && !isValidEmail(data.admin_email)) {
+      pushError(errors, "البريد الإلكتروني غير صحيح.");
+    }
+    if (data.admin_password && !isStrongPasswordEnough(data.admin_password)) {
+      pushError(errors, "كلمة المرور يجب أن تكون 6 أحرف على الأقل.");
+    }
+    if (!isValidHexColor(data.primary_color_1)) {
+      pushError(errors, "اللون الأساسي الأول يجب أن يكون قيمة hex صحيحة (مثال: #3b82f6).");
+    }
+    if (!isValidHexColor(data.primary_color_2)) {
+      pushError(errors, "اللون الأساسي الثاني يجب أن يكون قيمة hex صحيحة (مثال: #1e40af).");
+    }
+    if (!isValidHexColor(data.primary_color_3)) {
+      pushError(errors, "اللون الأساسي الثالث يجب أن يكون قيمة hex صحيحة (مثال: #1e3a8a).");
+    }
+    if (cleanString(data.logo_url) && !isValidUrl(data.logo_url)) {
+      pushError(errors, "رابط اللوجو غير صالح. استخدم http(s)://...");
+    }
+    if (!siteSlug) {
+      pushError(errors, "اسم الموقع غير صالح بعد التحويل إلى Slug. يرجى تعديل الاسم.");
+    }
+    return errors;
+  }, [siteSlug]);
 
-  const handleColorChange = (colorName: string, value: string) => {
-    setFormData(prev => ({ ...prev, [colorName]: value }));
-  };
+  const deployToVercel = useCallback(
+    async (clientId: string): Promise<CreateVercelProjectResponse> => {
+      setDeploymentLoading(true);
+      try {
+        const nameForVercel = siteSlug || formData.site_name;
 
-  const deployToVercel = async (clientId: string) => {
-    setDeploymentLoading(true);
-    
-    try {
-      // Step 1: Create GitHub repository
-      console.log("Creating GitHub repository...");
-      const githubResponse = await supabase.functions.invoke('create-github-repo', {
-        body: {
-          siteName: formData.site_name,
-          slug: formData.slug,
-          clientId: clientId
+        // التحقق من اتصال Supabase
+        if (!supabase) {
+          throw new Error("اتصال Supabase غير متوفر");
         }
-      });
 
-      if (githubResponse.error) {
-        throw new Error(`GitHub creation failed: ${githubResponse.error.message}`);
+        // استدعاء Edge Function مع معالجة الأخطاء المحسنة
+        let data: CreateVercelProjectResponse | null = null;
+        let error: Error | null = null;
+
+        try {
+          const response = await supabase.functions.invoke<CreateVercelProjectResponse>(
+            "create-vercel-project",
+            {
+              body: {
+                name: nameForVercel,
+                clientId,
+              },
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              timeout: 15000 // 15 ثانية مهلة للطلب
+            }
+          );
+
+          data = response.data;
+          error = response.error;
+        } catch (invokeError) {
+          console.error("فشل استدعاء Edge Function:", invokeError);
+          throw new Error("تعذر الاتصال بخدمة النشر. يرجى المحاولة لاحقاً");
+        }
+
+        if (error || !data) {
+          throw new Error(error?.message || "فشل في إنشاء مشروع Vercel");
+        }
+
+        if (!data.projectId) {
+          throw new Error("لم يتم استلام معرف المشروع من Vercel");
+        }
+
+        // تحديث سجل العميل بمعلومات Vercel
+        const updatePayload: Partial<ClientRow> = {
+          vercel_project_id: data.projectId,
+          vercel_url: data.projectUrl || null,
+          custom_domain: data.customDomain || null
+        };
+
+        const { error: updateError } = await supabase
+          .from("clients")
+          .update(updatePayload)
+          .eq("id", clientId);
+
+        if (updateError) {
+          console.error("خطأ تحديث العميل:", updateError);
+          throw new Error("تم النشر ولكن تعذر حفظ معلومات المشروع");
+        }
+
+        return data;
+      } catch (err: any) {
+        console.error("تفاصيل خطأ النشر:", err);
+        throw err;
+      } finally {
+        setDeploymentLoading(false);
+      }
+    },
+    [formData.site_name, siteSlug]
+  );
+
+  const createClientRow = useCallback(
+    async (data: CreateClientForm): Promise<ClientRow> => {
+      try {
+        const { data: client, error: clientError } = await supabase
+          .from("clients")
+          .insert([
+            {
+              name: cleanString(data.site_name),
+              client_name: cleanString(data.client_name),
+              logo_url: cleanString(data.logo_url) || null,
+              description: cleanString(data.description) || null,
+              is_active: true,
+            }
+          ])
+          .select()
+          .single();
+
+        if (clientError) {
+          console.error("تفاصيل خطأ إنشاء العميل:", clientError);
+          throw new Error(clientError.message || "تعذر إنشاء سجل العميل");
+        }
+
+        if (!client || !client.id) {
+          throw new Error("تعذر استرجاع بيانات العميل بعد الإنشاء");
+        }
+
+        return client;
+      } catch (err) {
+        console.error("خطأ في إنشاء سجل العميل:", err);
+        throw err;
+      }
+    },
+    []
+  );
+
+  const assertEmailNotTaken = useCallback(async (email: string) => {
+    try {
+      const { data: existingManager, error: emailError } = await supabase
+        .from("managers")
+        .select("id")
+        .eq("email", cleanString(email))
+        .maybeSingle();
+
+      if (emailError) {
+        console.error("تفاصيل خطأ التحقق من البريد:", emailError);
+        throw new Error(emailError.message || "تعذر التحقق من البريد الإلكتروني");
       }
 
-      const { repoUrl } = githubResponse.data;
-      console.log("GitHub repository created:", repoUrl);
-
-      // Step 2: Deploy to Vercel
-      console.log("Deploying to Vercel...");
-      const vercelResponse = await supabase.functions.invoke('deploy-to-vercel', {
-        body: {
-          siteName: formData.site_name,
-          slug: formData.slug,
-          clientId: clientId,
-          githubRepoUrl: repoUrl
-        }
-      });
-
-      if (vercelResponse.error) {
-        throw new Error(`Vercel deployment failed: ${vercelResponse.error.message}`);
+      if (existingManager) {
+        throw new Error("البريد الإلكتروني محجوز مسبقاً، يرجى استخدام بريد آخر");
       }
-
-      const { projectUrl } = vercelResponse.data;
-      console.log("Vercel deployment successful:", projectUrl);
-
-      toast({
-        title: "تم رفع الموقع بنجاح",
-        description: `الموقع متاح الآن على: ${projectUrl}`,
-      });
-
-      // Update client record with deployment URLs
-      console.log("Updating client record with deployment info...");
-      
-    } catch (error) {
-      console.error("Deployment error:", error);
-      toast({
-        title: "خطأ في الرفع",
-        description: error instanceof Error ? error.message : "حدث خطأ أثناء رفع الموقع",
-        variant: "destructive"
-      });
-    } finally {
-      setDeploymentLoading(false);
+    } catch (err) {
+      console.error("خطأ في التحقق من البريد الإلكتروني:", err);
+      throw err;
     }
-  };
+  }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-
+  const createSiteSettings = useCallback(async (clientId: string, data: CreateClientForm) => {
     try {
-      // Create client record
-      const { data: client, error: clientError } = await supabase
-        .from('clients')
-        .insert([{
-          name: formData.site_name,
-          slug: formData.slug,
-          logo_url: formData.logo_url || null,
-          primary_color_1: formData.primary_color_1,
-          primary_color_2: formData.primary_color_2,
-          primary_color_3: formData.primary_color_3,
-          is_active: true
-        }])
-        .select()
-        .single();
+      const payload = {
+        client_id: clientId,
+        site_name_ar: cleanString(data.site_name),
+        site_name_en: cleanString(data.site_name),
+        logo_url: cleanString(data.logo_url) || null,
+        primary_color_1: data.primary_color_1,
+        primary_color_2: data.primary_color_2,
+        primary_color_3: data.primary_color_3,
+        show_countries_section: true,
+        show_universities_section: true,
+        show_programs_section: true,
+        show_articles_section: true,
+        show_testimonials_section: true,
+        tagline_ar: "منصة متخصصة في الدراسة بالخارج",
+        tagline_en: "Specialized platform for studying abroad",
+      };
 
-      if (clientError) throw clientError;
+      const { error: settingsError } = await supabase.from("site_settings").insert([payload]);
 
-      // Create admin manager for this client
-      const { error: managerError } = await supabase
-        .from('managers')
-        .insert([{
-          email: formData.admin_email,
-          password: formData.admin_password,
-          client_id: client.id
-        }]);
-
-      if (managerError) throw managerError;
-
-      // Create default site settings for this client
-      const { error: settingsError } = await supabase
-        .from('site_settings')
-        .insert([{
-          client_id: client.id,
-          site_name_ar: formData.site_name,
-          site_name_en: formData.site_name,
-          logo_url: formData.logo_url || null,
-          primary_color_1: formData.primary_color_1,
-          primary_color_2: formData.primary_color_2,
-          primary_color_3: formData.primary_color_3,
-          show_countries_section: true,
-          show_universities_section: true,
-          show_programs_section: true,
-          show_articles_section: true,
-          show_testimonials_section: true
-        }]);
-
-      if (settingsError) throw settingsError;
-
-      toast({
-        title: "تم إنشاء الموقع بنجاح",
-        description: "جاري رفع الموقع على Vercel...",
-      });
-
-      // Deploy to Vercel
-      await deployToVercel(client.id);
-
-      // Redirect to platform dashboard
-      navigate("/platform/dashboard");
-
-    } catch (error) {
-      console.error('Error creating client:', error);
-      toast({
-        title: "خطأ",
-        description: "حدث خطأ في إنشاء الموقع",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
+      if (settingsError) {
+        console.error("تفاصيل خطأ إعدادات الموقع:", settingsError);
+        throw new Error(settingsError.message || "تعذر إنشاء إعدادات الموقع");
+      }
+    } catch (err) {
+      console.error("خطأ في إنشاء إعدادات الموقع:", err);
+      throw err;
     }
-  };
+  }, []);
+
+  const createManagerAccount = useCallback(async (clientId: string, data: CreateClientForm) => {
+    try {
+      const payload = {
+        email: cleanString(data.admin_email),
+        password: data.admin_password,
+        name: cleanString(data.client_name),
+        client_id: clientId,
+        is_super_admin: true,
+      };
+
+      const { error: managerError } = await supabase.from("managers").insert([payload]);
+
+      if (managerError) {
+        console.error("تفاصيل خطأ إنشاء المدير:", managerError);
+        throw new Error(managerError.message || "تعذر إنشاء حساب المدير");
+      }
+    } catch (err) {
+      console.error("خطأ في إنشاء حساب المدير:", err);
+      throw err;
+    }
+  }, []);
+
+  const createDefaultContactInfo = useCallback(async (clientId: string, email: string) => {
+    try {
+      const payload = {
+        client_id: clientId,
+        phone_numbers: [] as string[],
+        email_addresses: [cleanString(email)],
+        social_links: {
+          tiktok: "",
+          twitter: "",
+          youtube: "",
+          facebook: "",
+          linkedin: "",
+          snapchat: "",
+          instagram: "",
+        },
+        newsletter_title: "النشرة الإخبارية",
+        newsletter_description: "اشترك في نشرتنا البريدية لتصلك آخر العروض والأخبار",
+      };
+
+      const { error: contactInfoError } = await supabase.from("contact_info").insert([payload]);
+
+      if (contactInfoError) {
+        console.error("تفاصيل خطأ معلومات الاتصال:", contactInfoError);
+        throw new Error(contactInfoError.message || "تعذر إنشاء معلومات الاتصال الافتراضية");
+      }
+    } catch (err) {
+      console.error("خطأ في إنشاء معلومات الاتصال:", err);
+      throw err;
+    }
+  }, []);
+
+  const handleSubmit = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      setLoading(true);
+
+      const prepared: CreateClientForm = {
+        site_name: cleanString(formData.site_name),
+        client_name: cleanString(formData.client_name),
+        admin_email: cleanString(formData.admin_email),
+        admin_password: formData.admin_password,
+        primary_color_1: cleanString(formData.primary_color_1),
+        primary_color_2: cleanString(formData.primary_color_2),
+        primary_color_3: cleanString(formData.primary_color_3),
+        logo_url: cleanString(formData.logo_url),
+        description: cleanString(formData.description),
+      };
+
+      try {
+        // التحقق من صحة البيانات
+        const errors = validateBeforeSubmit(prepared);
+        if (errors.length > 0) {
+          toast({
+            title: "هناك أخطاء في البيانات",
+            description: errors.join(" | "),
+            variant: "destructive",
+          });
+          return;
+        }
+
+        // التحقق من اتصال Supabase
+        if (!supabase) {
+          toast({
+            title: "خطأ في الاتصال",
+            description: "لا يوجد اتصال بقاعدة البيانات",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        // إنشاء العميل والبيانات الأساسية
+        await assertEmailNotTaken(prepared.admin_email);
+        const client = await createClientRow(prepared);
+
+        await Promise.all([
+          createSiteSettings(client.id, prepared),
+          createManagerAccount(client.id, prepared),
+          createDefaultContactInfo(client.id, prepared.admin_email)
+        ]);
+
+        toast({
+          title: "تم إنشاء العميل بنجاح",
+          description: "جاري تهيئة المشروع ونشره على Vercel...",
+        });
+
+        // محاولة النشر على Vercel (مع فصل الأخطاء عن العملية الأساسية)
+        try {
+          const vercelResult = await deployToVercel(client.id);
+
+          toast({
+            title: "تم النشر بنجاح",
+            description: vercelResult.projectUrl 
+              ? `رابط الموقع: ${vercelResult.projectUrl}`
+              : "تم إنشاء الموقع بنجاح",
+          });
+        } catch (deployError: any) {
+          console.warn("خطأ غير حرج في النشر:", deployError);
+          toast({
+            title: "تم إنشاء العميل",
+            description: "تم إنشاء العميل بنجاح ولكن حدث خطأ في النشر. يمكنك إعادة المحاولة لاحقاً",
+            variant: "default",
+          });
+        }
+
+        navigate("/platform/dashboard");
+      } catch (err: any) {
+        console.error("تفاصيل خطأ إنشاء العميل:", err);
+        toast({
+          title: "خطأ في إنشاء العميل",
+          description: err?.message || "حدث خطأ غير متوقع أثناء إنشاء العميل",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    },
+    [
+      formData,
+      validateBeforeSubmit,
+      toast,
+      assertEmailNotTaken,
+      createClientRow,
+      createSiteSettings,
+      createManagerAccount,
+      createDefaultContactInfo,
+      deployToVercel,
+      navigate,
+    ]
+  );
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 p-4">
       <div className="container mx-auto max-w-4xl">
-        {/* Header */}
         <div className="flex items-center space-x-4 space-x-reverse mb-8">
-          <Button variant="outline" onClick={() => navigate("/platform/dashboard")}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => navigate("/platform/dashboard")}
+            aria-label="العودة للوحة التحكم"
+          >
             <ArrowLeft className="w-4 h-4 mr-2" />
             العودة للوحة التحكم
           </Button>
@@ -200,8 +495,7 @@ const CreateClient = () => {
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Site Information */}
+        <form onSubmit={handleSubmit} className="space-y-6" noValidate>
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center">
@@ -220,7 +514,13 @@ const CreateClient = () => {
                     onChange={handleInputChange}
                     required
                     placeholder="مثال: موقع أحمد للدراسة بالخارج"
+                    autoComplete="off"
+                    aria-required="true"
                   />
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    الاسم المختصر (slug):{" "}
+                    <span className="font-mono">{siteSlug || "—"}</span>
+                  </p>
                 </div>
                 <div>
                   <Label htmlFor="client_name">اسم العميل *</Label>
@@ -231,29 +531,11 @@ const CreateClient = () => {
                     onChange={handleInputChange}
                     required
                     placeholder="مثال: أحمد محمد"
+                    autoComplete="name"
+                    aria-required="true"
                   />
                 </div>
               </div>
-              
-              <div>
-                <Label htmlFor="slug">اسم النطاق الفرعي *</Label>
-                <div className="flex items-center space-x-2 space-x-reverse">
-                  <Input
-                    id="slug"
-                    name="slug"
-                    value={formData.slug}
-                    onChange={handleInputChange}
-                    required
-                    placeholder="ahmed-study-abroad"
-                    className="font-mono"
-                  />
-                  <span className="text-sm text-muted-foreground">.vercel.app</span>
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  سيكون الموقع متاح على: https://{formData.slug || "your-site"}.vercel.app
-                </p>
-              </div>
-
               <div>
                 <Label htmlFor="logo_url">رابط اللوجو (اختياري)</Label>
                 <Input
@@ -261,10 +543,14 @@ const CreateClient = () => {
                   name="logo_url"
                   value={formData.logo_url}
                   onChange={handleInputChange}
+                  inputMode="url"
                   placeholder="https://example.com/logo.png"
+                  aria-describedby="logo_url_hint"
                 />
+                <p id="logo_url_hint" className="mt-1 text-xs text-muted-foreground">
+                  استخدم رابط مباشر لصورة PNG أو SVG أو JPG.
+                </p>
               </div>
-
               <div>
                 <Label htmlFor="description">وصف الموقع (اختياري)</Label>
                 <Textarea
@@ -278,8 +564,6 @@ const CreateClient = () => {
               </div>
             </CardContent>
           </Card>
-
-          {/* Admin Account */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center">
@@ -302,8 +586,14 @@ const CreateClient = () => {
                       required
                       placeholder="admin@example.com"
                       className="pl-10"
+                      autoComplete="email"
+                      aria-required="true"
+                      inputMode="email"
                     />
                   </div>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    سنتحقق من أن البريد غير مستخدم سابقًا كمدير.
+                  </p>
                 </div>
                 <div>
                   <Label htmlFor="admin_password">كلمة المرور *</Label>
@@ -316,16 +606,20 @@ const CreateClient = () => {
                       value={formData.admin_password}
                       onChange={handleInputChange}
                       required
-                      placeholder="كلمة مرور قوية"
+                      placeholder="كلمة مرور قوية (6 أحرف على الأقل)"
+                      minLength={6}
                       className="pl-10"
+                      autoComplete="new-password"
+                      aria-required="true"
                     />
                   </div>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    يُفضّل استخدام كلمة مرور فريدة وقوية. (يمكنك لاحقًا تفعيل تسجيل الدخول الفعلي عبر Auth)
+                  </p>
                 </div>
               </div>
             </CardContent>
           </Card>
-
-          {/* Design Colors */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center">
@@ -339,12 +633,15 @@ const CreateClient = () => {
                   <Label htmlFor="primary_color_1">اللون الأساسي الأول</Label>
                   <div className="flex items-center space-x-2 space-x-reverse">
                     <input
+                      id="primary_color_1_picker"
+                      aria-label="اختيار اللون الأساسي الأول"
                       type="color"
                       value={formData.primary_color_1}
                       onChange={(e) => handleColorChange("primary_color_1", e.target.value)}
                       className="w-12 h-10 rounded border"
                     />
                     <Input
+                      id="primary_color_1"
                       value={formData.primary_color_1}
                       onChange={(e) => handleColorChange("primary_color_1", e.target.value)}
                       placeholder="#3b82f6"
@@ -356,12 +653,15 @@ const CreateClient = () => {
                   <Label htmlFor="primary_color_2">اللون الأساسي الثاني</Label>
                   <div className="flex items-center space-x-2 space-x-reverse">
                     <input
+                      id="primary_color_2_picker"
+                      aria-label="اختيار اللون الأساسي الثاني"
                       type="color"
                       value={formData.primary_color_2}
                       onChange={(e) => handleColorChange("primary_color_2", e.target.value)}
                       className="w-12 h-10 rounded border"
                     />
                     <Input
+                      id="primary_color_2"
                       value={formData.primary_color_2}
                       onChange={(e) => handleColorChange("primary_color_2", e.target.value)}
                       placeholder="#1e40af"
@@ -373,12 +673,15 @@ const CreateClient = () => {
                   <Label htmlFor="primary_color_3">اللون الأساسي الثالث</Label>
                   <div className="flex items-center space-x-2 space-x-reverse">
                     <input
+                      id="primary_color_3_picker"
+                      aria-label="اختيار اللون الأساسي الثالث"
                       type="color"
                       value={formData.primary_color_3}
                       onChange={(e) => handleColorChange("primary_color_3", e.target.value)}
                       className="w-12 h-10 rounded border"
                     />
                     <Input
+                      id="primary_color_3"
                       value={formData.primary_color_3}
                       onChange={(e) => handleColorChange("primary_color_3", e.target.value)}
                       placeholder="#1e3a8a"
@@ -387,29 +690,11 @@ const CreateClient = () => {
                   </div>
                 </div>
               </div>
-              
-              {/* Color Preview */}
-              <div className="mt-4 p-4 border rounded-lg">
-                <p className="text-sm font-medium mb-2">معاينة الألوان:</p>
-                <div className="flex items-center space-x-2 space-x-reverse">
-                  <div 
-                    className="w-8 h-8 rounded-full" 
-                    style={{ backgroundColor: formData.primary_color_1 }}
-                  />
-                  <div 
-                    className="w-8 h-8 rounded-full" 
-                    style={{ backgroundColor: formData.primary_color_2 }}
-                  />
-                  <div 
-                    className="w-8 h-8 rounded-full" 
-                    style={{ backgroundColor: formData.primary_color_3 }}
-                  />
-                </div>
-              </div>
+              <p className="mt-2 text-xs text-muted-foreground">
+                أدخل قيم Hex صالحة مثل #3b82f6. يمكنك تعديلها لاحقًا من الإعدادات.
+              </p>
             </CardContent>
           </Card>
-
-          {/* Submit Button */}
           <div className="flex items-center justify-end space-x-4 space-x-reverse">
             <Button
               type="button"
@@ -424,8 +709,20 @@ const CreateClient = () => {
               className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
             >
               <Building className="w-4 h-4 mr-2" />
-              {loading ? "جاري الإنشاء..." : deploymentLoading ? "جاري الرفع..." : "إنشاء الموقع"}
+              {loading
+                ? "جاري الإنشاء..."
+                : deploymentLoading
+                ? "جاري النشر..."
+                : "إنشاء الموقع"}
             </Button>
+          </div>
+          <div className="pt-2 text-xs text-muted-foreground">
+            {loading && !deploymentLoading && (
+              <p>⏳ جاري إنشاء الجداول وإدخال البيانات في Supabase...</p>
+            )}
+            {deploymentLoading && (
+              <p>🚀 جاري نشر المشروع على Vercel عبر Edge Function...</p>
+            )}
           </div>
         </form>
       </div>

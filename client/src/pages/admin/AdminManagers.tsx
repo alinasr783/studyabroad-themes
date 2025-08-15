@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Trash2, User } from "lucide-react";
+import { Plus, Trash2, User, Edit } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import AdminLayout from "@/components/admin/AdminLayout";
@@ -14,8 +14,11 @@ import AdminLayout from "@/components/admin/AdminLayout";
 interface Manager {
   id: string;
   email: string;
+  name?: string | null;
   client_id: string;
   created_at: string;
+  updated_at?: string;
+  is_active?: boolean;
 }
 
 const AdminManagers = () => {
@@ -23,12 +26,15 @@ const AdminManagers = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [editingManager, setEditingManager] = useState<Manager | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
     email: "",
+    name: "",
     password: "",
+    is_active: true,
   });
 
   useEffect(() => {
@@ -90,10 +96,11 @@ const AdminManagers = () => {
     }
   };
 
-  const handleInputChange = (field: string, value: string) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value, type, checked } = e.target;
     setFormData(prev => ({
       ...prev,
-      [field]: value
+      [name]: type === 'checkbox' ? checked : value
     }));
   };
 
@@ -109,25 +116,49 @@ const AdminManagers = () => {
 
       const { client_id } = JSON.parse(session);
 
-      // Hash password (in a real app, you'd use proper bcrypt or similar)
-      const hashedPassword = btoa(formData.password); // Simple base64 encoding for demo
-
       const managerData = {
         email: formData.email,
-        password: hashedPassword,
+        name: formData.name || null,
         client_id,
+        is_active: formData.is_active,
+        ...(formData.password && { password: formData.password }) // Only include password if provided
       };
 
-      const { error } = await supabase
-        .from("managers")
-        .insert([managerData]);
+      let result;
+      if (editingManager) {
+        // Update existing manager
+        const { data, error } = await supabase
+          .from("managers")
+          .update(managerData)
+          .eq("id", editingManager.id)
+          .select()
+          .single();
 
-      if (error) throw error;
+        if (error) throw error;
+        result = data;
+        toast({
+          title: "تم التحديث",
+          description: "تم تحديث المدير بنجاح",
+        });
+      } else {
+        // Create new manager
+        if (!formData.password) {
+          throw new Error("كلمة المرور مطلوبة للمدير الجديد");
+        }
 
-      toast({
-        title: "تم الإضافة",
-        description: "تم إضافة المدير بنجاح",
-      });
+        const { data, error } = await supabase
+          .from("managers")
+          .insert([{ ...managerData, password: formData.password }])
+          .select()
+          .single();
+
+        if (error) throw error;
+        result = data;
+        toast({
+          title: "تم الإضافة",
+          description: "تم إضافة المدير بنجاح",
+        });
+      }
 
       fetchManagers(client_id);
       resetForm();
@@ -136,10 +167,21 @@ const AdminManagers = () => {
       console.error("Error saving manager:", error);
       toast({
         title: "خطأ",
-        description: "حدث خطأ أثناء إضافة المدير",
+        description: error instanceof Error ? error.message : "حدث خطأ أثناء حفظ المدير",
         variant: "destructive",
       });
     }
+  };
+
+  const handleEdit = (manager: Manager) => {
+    setEditingManager(manager);
+    setFormData({
+      email: manager.email,
+      name: manager.name || "",
+      password: "",
+      is_active: manager.is_active ?? true,
+    });
+    setShowForm(true);
   };
 
   const handleDelete = async (id: string) => {
@@ -181,15 +223,20 @@ const AdminManagers = () => {
   const resetForm = () => {
     setFormData({
       email: "",
+      name: "",
       password: "",
+      is_active: true,
     });
+    setEditingManager(null);
   };
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("ar-SA", {
       year: "numeric",
       month: "long",
-      day: "numeric"
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit"
     });
   };
 
@@ -225,7 +272,10 @@ const AdminManagers = () => {
             <p className="text-muted-foreground">إدارة حسابات المديرين في النظام</p>
           </div>
 
-          <Dialog open={showForm} onOpenChange={setShowForm}>
+          <Dialog open={showForm} onOpenChange={(open) => {
+            if (!open) resetForm();
+            setShowForm(open);
+          }}>
             <DialogTrigger asChild>
               <Button onClick={() => resetForm()}>
                 <Plus className="w-4 h-4 ml-2" />
@@ -235,7 +285,7 @@ const AdminManagers = () => {
 
             <DialogContent className="max-w-md">
               <DialogHeader>
-                <DialogTitle>إضافة مدير جديد</DialogTitle>
+                <DialogTitle>{editingManager ? "تعديل المدير" : "إضافة مدير جديد"}</DialogTitle>
               </DialogHeader>
 
               <form onSubmit={handleSubmit} className="space-y-4">
@@ -243,31 +293,66 @@ const AdminManagers = () => {
                   <Label htmlFor="email">البريد الإلكتروني *</Label>
                   <Input
                     id="email"
+                    name="email"
                     type="email"
                     value={formData.email}
-                    onChange={(e) => handleInputChange("email", e.target.value)}
+                    onChange={handleInputChange}
                     required
+                    disabled={!!editingManager}
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="password">كلمة المرور *</Label>
+                  <Label htmlFor="name">الاسم (اختياري)</Label>
+                  <Input
+                    id="name"
+                    name="name"
+                    type="text"
+                    value={formData.name}
+                    onChange={handleInputChange}
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="password">
+                    {editingManager ? "كلمة المرور الجديدة (اختياري)" : "كلمة المرور *"}
+                  </Label>
                   <Input
                     id="password"
+                    name="password"
                     type="password"
                     value={formData.password}
-                    onChange={(e) => handleInputChange("password", e.target.value)}
-                    required
+                    onChange={handleInputChange}
+                    required={!editingManager}
                     minLength={6}
                   />
                 </div>
 
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="is_active"
+                    name="is_active"
+                    checked={formData.is_active}
+                    onChange={handleInputChange}
+                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                  />
+                  <Label htmlFor="is_active">الحساب نشط</Label>
+                </div>
+
                 <div className="flex justify-end gap-2">
-                  <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => {
+                      resetForm();
+                      setShowForm(false);
+                    }}
+                  >
                     إلغاء
                   </Button>
                   <Button type="submit">
-                    إضافة
+                    {editingManager ? "حفظ التعديلات" : "إضافة"}
                   </Button>
                 </div>
               </form>
@@ -283,29 +368,50 @@ const AdminManagers = () => {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>الاسم</TableHead>
                   <TableHead>البريد الإلكتروني</TableHead>
+                  <TableHead>الحالة</TableHead>
                   <TableHead>تاريخ الإضافة</TableHead>
+                  <TableHead>آخر تحديث</TableHead>
                   <TableHead>الإجراءات</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {managers.map((manager) => (
                   <TableRow key={manager.id}>
+                    <TableCell>{manager.name || "بدون اسم"}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <User className="w-4 h-4 text-muted-foreground" />
                         {manager.email}
                       </div>
                     </TableCell>
-                    <TableCell>{formatDate(manager.created_at)}</TableCell>
                     <TableCell>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleDelete(manager.id)}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                      {manager.is_active ? (
+                        <Badge variant="default">نشط</Badge>
+                      ) : (
+                        <Badge variant="destructive">غير نشط</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>{formatDate(manager.created_at)}</TableCell>
+                    <TableCell>{manager.updated_at ? formatDate(manager.updated_at) : "-"}</TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEdit(manager)}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleDelete(manager.id)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
