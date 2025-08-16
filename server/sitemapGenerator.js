@@ -3,6 +3,7 @@ const { supabase } = require('../integrations/supabase/client');
 
 const EXTERNAL_DATA_URL = 'https://yourdomain.com';
 
+
 async function generateSitemap() {
   try {
     // جلب البيانات من Supabase
