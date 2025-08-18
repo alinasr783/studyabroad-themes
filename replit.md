@@ -11,11 +11,11 @@ This is a comprehensive study abroad/education platform that has been successful
 - React frontend with modern UI components
 
 ## Recent Changes
-- **2025-01-06**: User requested to revert to Supabase backend
-  - Restoring Supabase client integration
-  - Fixing admin dashboard functionality for adding countries and other data
-  - Ensuring all CRUD operations work properly with Supabase
-  - Maintaining React frontend with Supabase integration
+- **2025-01-18**: Fixing Vercel deployment configuration
+  - User reported that Vercel deployment shows compiled JS code instead of website
+  - Updated vercel.json to treat as static site with Supabase backend
+  - Configured proper build command and output directory
+  - Supabase credentials already configured in client code
 
 ## Architecture
 - **Backend**: Supabase (PostgreSQL + API)
@@ -30,11 +30,10 @@ This is a comprehensive study abroad/education platform that has been successful
 - Admin forms for adding countries/universities/programs must work properly
 
 ## Current Issues
-- Admin dashboard add functionality not working
-- Need to restore Supabase client integration
-- Fix country data fetching errors
+- Vercel deployment configuration needs to be properly set for static site
+- Error message in console: "لم يتم العثور على عميل لهذا الدومين" (Client not found for this domain)
 
 ## Next Steps
-1. Restore Supabase client code
-2. Fix admin dashboard CRUD operations
-3. Test all functionality end-to-end
+1. Test Vercel deployment with updated configuration
+2. Fix domain-based client detection issue
+3. Ensure proper static site deployment
