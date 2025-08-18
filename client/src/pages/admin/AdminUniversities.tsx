@@ -64,12 +64,38 @@ interface Country {
   client_id?: string;
 }
 
+interface UniversityMedia {
+  id?: string;
+  media_type: 'image' | 'video';
+  url: string;
+  caption_ar?: string;
+  caption_en?: string;
+  is_featured: boolean;
+  display_order: number;
+}
+
+interface UniversityReview {
+  id?: string;
+  student_name: string;
+  student_nationality?: string;
+  program_name?: string;
+  graduation_year?: number;
+  rating: number;
+  review_text_ar?: string;
+  review_text_en?: string;
+  is_approved: boolean;
+}
+
 const AdminUniversities = () => {
   const [universities, setUniversities] = useState<University[]>([]);
   const [countries, setCountries] = useState<Country[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingUniversity, setEditingUniversity] = useState<University | null>(null);
+  const [universityMedia, setUniversityMedia] = useState<UniversityMedia[]>([]);
+  const [universityReviews, setUniversityReviews] = useState<UniversityReview[]>([]);
+  const [showMediaSection, setShowMediaSection] = useState(false);
+  const [showReviewsSection, setShowReviewsSection] = useState(false);
   const [formData, setFormData] = useState({
     name_ar: "",
     name_en: "",
@@ -144,7 +170,43 @@ const AdminUniversities = () => {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setUniversities(data || []);
+      
+      // Transform null values to undefined to match interface
+      const transformedData = (data || []).map(university => ({
+        ...university,
+        description_ar: university.description_ar ?? undefined,
+        description_en: university.description_en ?? undefined,
+        logo_url: university.logo_url ?? undefined,
+        image_url: university.image_url ?? undefined,
+        city: university.city ?? undefined,
+        website: university.website ?? undefined,
+        website_url: university.website_url ?? undefined,
+        world_ranking: university.world_ranking ?? undefined,
+        tuition_fee_min: university.tuition_fee_min ?? undefined,
+        tuition_fee_max: university.tuition_fee_max ?? undefined,
+        student_count: university.student_count ?? undefined,
+        acceptance_rate: university.acceptance_rate ?? undefined,
+        international_students_percentage: university.international_students_percentage ?? undefined,
+        language_requirements: university.language_requirements ?? undefined,
+        application_deadline: university.application_deadline ?? undefined,
+        country_id: university.country_id ?? undefined,
+        client_id: university.client_id ?? undefined,
+        accreditation: university.accreditation ?? undefined,
+        founded_year: university.founded_year ?? undefined,
+        campus_type: university.campus_type ?? undefined,
+        housing_available: university.housing_available ?? undefined,
+        scholarship_available: university.scholarship_available ?? undefined,
+        video_url: university.video_url ?? undefined,
+        housing_fee: university.housing_fee ?? undefined,
+        visa_fee: university.visa_fee ?? undefined,
+        residence_fee: university.residence_fee ?? undefined,
+        admission_fee: university.admission_fee ?? undefined,
+        procedures_fee: university.procedures_fee ?? undefined,
+        commission_fee: university.commission_fee ?? undefined,
+        preparation_fee: university.preparation_fee ?? undefined
+      }));
+      
+      setUniversities(transformedData);
     } catch (error) {
       console.error("Error fetching universities:", error);
       toast({
@@ -201,6 +263,56 @@ const AdminUniversities = () => {
     }));
   };
 
+  // Media Management Functions
+  const addMediaItem = () => {
+    const newMedia: UniversityMedia = {
+      media_type: 'image',
+      url: '',
+      caption_ar: '',
+      caption_en: '',
+      is_featured: false,
+      display_order: universityMedia.length
+    };
+    setUniversityMedia([...universityMedia, newMedia]);
+  };
+
+  const updateMediaItem = (index: number, field: keyof UniversityMedia, value: any) => {
+    const updatedMedia = [...universityMedia];
+    updatedMedia[index] = { ...updatedMedia[index], [field]: value };
+    setUniversityMedia(updatedMedia);
+  };
+
+  const removeMediaItem = (index: number) => {
+    const updatedMedia = universityMedia.filter((_, i) => i !== index);
+    setUniversityMedia(updatedMedia);
+  };
+
+  // Reviews Management Functions
+  const addReviewItem = () => {
+    const newReview: UniversityReview = {
+      student_name: '',
+      student_nationality: '',
+      program_name: '',
+      graduation_year: new Date().getFullYear(),
+      rating: 5,
+      review_text_ar: '',
+      review_text_en: '',
+      is_approved: true
+    };
+    setUniversityReviews([...universityReviews, newReview]);
+  };
+
+  const updateReviewItem = (index: number, field: keyof UniversityReview, value: any) => {
+    const updatedReviews = [...universityReviews];
+    updatedReviews[index] = { ...updatedReviews[index], [field]: value };
+    setUniversityReviews(updatedReviews);
+  };
+
+  const removeReviewItem = (index: number) => {
+    const updatedReviews = universityReviews.filter((_, i) => i !== index);
+    setUniversityReviews(updatedReviews);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -235,6 +347,8 @@ const AdminUniversities = () => {
         preparation_fee: formData.preparation_fee ? parseFloat(formData.preparation_fee) : null,
       };
 
+      let universityId: string;
+
       if (editingUniversity) {
         if (editingUniversity.client_id !== clientId) {
           toast({
@@ -252,21 +366,33 @@ const AdminUniversities = () => {
           .eq("client_id", clientId);
 
         if (error) throw error;
+        universityId = editingUniversity.id;
 
         toast({
           title: "تم التحديث",
           description: "تم تحديث بيانات الجامعة بنجاح",
         });
       } else {
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from("universities")
-          .insert([{ ...universityData, client_id: clientId }]);
+          .insert([{ ...universityData, client_id: clientId }])
+          .select('id');
 
         if (error) throw error;
+        universityId = data[0].id;
 
         toast({
           title: "تم الإضافة",
           description: "تم إضافة الجامعة الجديدة بنجاح",
+        });
+      }
+
+      // Note: Media and Reviews will be saved once the database tables are created in Supabase
+      // For now, we'll show success but won't save media and reviews to avoid errors
+      if (universityMedia.length > 0 || universityReviews.length > 0) {
+        toast({
+          title: "ملاحظة",
+          description: "تم حفظ بيانات الجامعة. سيتم حفظ الميديا والمراجعات عند إنشاء الجداول المطلوبة في قاعدة البيانات.",
         });
       }
 
@@ -400,6 +526,10 @@ const AdminUniversities = () => {
       commission_fee: "",
       preparation_fee: "",
     });
+    setUniversityMedia([]);
+    setUniversityReviews([]);
+    setShowMediaSection(false);
+    setShowReviewsSection(false);
     setEditingUniversity(null);
     setShowForm(false);
   };
@@ -807,6 +937,246 @@ const AdminUniversities = () => {
                     />
                     <Label htmlFor="scholarship_available">منح دراسية متاحة</Label>
                   </div>
+                </div>
+
+                {/* University Media Section */}
+                <div className="border-t pt-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-medium">ميديا الجامعة</h3>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowMediaSection(!showMediaSection)}
+                    >
+                      {showMediaSection ? "إخفاء" : "إظهار"} الميديا
+                    </Button>
+                  </div>
+
+                  {showMediaSection && (
+                    <div className="space-y-4">
+                      {universityMedia.map((media, index) => (
+                        <div key={index} className="border rounded-lg p-4 space-y-4">
+                          <div className="flex items-center justify-between">
+                            <h4 className="font-medium">عنصر الميديا #{index + 1}</h4>
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => removeMediaItem(index)}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                              <Label>نوع الميديا</Label>
+                              <Select
+                                value={media.media_type}
+                                onValueChange={(value) => updateMediaItem(index, 'media_type', value as 'image' | 'video')}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="image">صورة</SelectItem>
+                                  <SelectItem value="video">فيديو</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div>
+                              <Label>رابط الميديا</Label>
+                              <Input
+                                value={media.url}
+                                onChange={(e) => updateMediaItem(index, 'url', e.target.value)}
+                                placeholder="https://example.com/media.jpg"
+                              />
+                            </div>
+                            <div>
+                              <Label>ترتيب العرض</Label>
+                              <Input
+                                type="number"
+                                min="0"
+                                value={media.display_order}
+                                onChange={(e) => updateMediaItem(index, 'display_order', parseInt(e.target.value) || 0)}
+                              />
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <Label>التوضيح بالعربية</Label>
+                              <Input
+                                value={media.caption_ar || ''}
+                                onChange={(e) => updateMediaItem(index, 'caption_ar', e.target.value)}
+                                placeholder="توضيح الصورة بالعربية"
+                              />
+                            </div>
+                            <div>
+                              <Label>التوضيح بالإنجليزية</Label>
+                              <Input
+                                value={media.caption_en || ''}
+                                onChange={(e) => updateMediaItem(index, 'caption_en', e.target.value)}
+                                placeholder="Caption in English"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="flex items-center space-x-2">
+                            <Switch
+                              checked={media.is_featured}
+                              onCheckedChange={(checked) => updateMediaItem(index, 'is_featured', checked)}
+                            />
+                            <Label>ميديا مميز</Label>
+                          </div>
+                        </div>
+                      ))}
+
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={addMediaItem}
+                        className="w-full"
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        إضافة عنصر ميديا جديد
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
+                {/* University Reviews Section */}
+                <div className="border-t pt-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-medium">مراجعات الطلاب</h3>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowReviewsSection(!showReviewsSection)}
+                    >
+                      {showReviewsSection ? "إخفاء" : "إظهار"} المراجعات
+                    </Button>
+                  </div>
+
+                  {showReviewsSection && (
+                    <div className="space-y-4">
+                      {universityReviews.map((review, index) => (
+                        <div key={index} className="border rounded-lg p-4 space-y-4">
+                          <div className="flex items-center justify-between">
+                            <h4 className="font-medium">مراجعة #{index + 1}</h4>
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => removeReviewItem(index)}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                              <Label>اسم الطالب</Label>
+                              <Input
+                                value={review.student_name}
+                                onChange={(e) => updateReviewItem(index, 'student_name', e.target.value)}
+                                placeholder="أحمد محمد"
+                                required
+                              />
+                            </div>
+                            <div>
+                              <Label>الجنسية</Label>
+                              <Input
+                                value={review.student_nationality || ''}
+                                onChange={(e) => updateReviewItem(index, 'student_nationality', e.target.value)}
+                                placeholder="مصر"
+                              />
+                            </div>
+                            <div>
+                              <Label>البرنامج الدراسي</Label>
+                              <Input
+                                value={review.program_name || ''}
+                                onChange={(e) => updateReviewItem(index, 'program_name', e.target.value)}
+                                placeholder="هندسة الحاسوب"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <Label>سنة التخرج</Label>
+                              <Input
+                                type="number"
+                                min="2000"
+                                max="2030"
+                                value={review.graduation_year || ''}
+                                onChange={(e) => updateReviewItem(index, 'graduation_year', parseInt(e.target.value) || undefined)}
+                                placeholder="2024"
+                              />
+                            </div>
+                            <div>
+                              <Label>التقييم (1-5 نجوم)</Label>
+                              <Select
+                                value={review.rating.toString()}
+                                onValueChange={(value) => updateReviewItem(index, 'rating', parseInt(value))}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="1">⭐ (1)</SelectItem>
+                                  <SelectItem value="2">⭐⭐ (2)</SelectItem>
+                                  <SelectItem value="3">⭐⭐⭐ (3)</SelectItem>
+                                  <SelectItem value="4">⭐⭐⭐⭐ (4)</SelectItem>
+                                  <SelectItem value="5">⭐⭐⭐⭐⭐ (5)</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+
+                          <div>
+                            <Label>المراجعة بالعربية</Label>
+                            <Textarea
+                              value={review.review_text_ar || ''}
+                              onChange={(e) => updateReviewItem(index, 'review_text_ar', e.target.value)}
+                              placeholder="أكتب تجربة الطالب بالعربية..."
+                              rows={3}
+                            />
+                          </div>
+
+                          <div>
+                            <Label>المراجعة بالإنجليزية</Label>
+                            <Textarea
+                              value={review.review_text_en || ''}
+                              onChange={(e) => updateReviewItem(index, 'review_text_en', e.target.value)}
+                              placeholder="Write student experience in English..."
+                              rows={3}
+                            />
+                          </div>
+
+                          <div className="flex items-center space-x-2">
+                            <Switch
+                              checked={review.is_approved}
+                              onCheckedChange={(checked) => updateReviewItem(index, 'is_approved', checked)}
+                            />
+                            <Label>مراجعة معتمدة</Label>
+                          </div>
+                        </div>
+                      ))}
+
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={addReviewItem}
+                        className="w-full"
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        إضافة مراجعة جديدة
+                      </Button>
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex gap-4">

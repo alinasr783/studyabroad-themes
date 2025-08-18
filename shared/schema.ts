@@ -186,6 +186,36 @@ export const testimonials = pgTable("testimonials", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
+// University Media table
+export const universityMedia = pgTable("university_media", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  universityId: uuid("university_id").notNull().references(() => universities.id),
+  mediaType: text("media_type").notNull(), // 'image' or 'video'
+  url: text("url").notNull(),
+  captionAr: text("caption_ar"),
+  captionEn: text("caption_en"),
+  isFeatured: boolean("is_featured").default(false),
+  displayOrder: integer("display_order").default(0),
+  clientId: uuid("client_id").references(() => clients.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// University Reviews table
+export const universityReviews = pgTable("university_reviews", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  universityId: uuid("university_id").notNull().references(() => universities.id),
+  studentName: text("student_name").notNull(),
+  studentNationality: text("student_nationality"),
+  programName: text("program_name"),
+  graduationYear: integer("graduation_year"),
+  rating: integer("rating").notNull(), // 1-5 stars
+  reviewTextAr: text("review_text_ar"),
+  reviewTextEn: text("review_text_en"),
+  isApproved: boolean("is_approved").default(false),
+  clientId: uuid("client_id").references(() => clients.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 // Site Settings table
 export const siteSettings = pgTable("site_settings", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -222,6 +252,8 @@ export const clientsRelations = relations(clients, ({ many, one }) => ({
   consultations: many(consultations),
   contactMessages: many(contactMessages),
   testimonials: many(testimonials),
+  universityMedia: many(universityMedia),
+  universityReviews: many(universityReviews),
   siteSettings: one(siteSettings),
 }));
 
@@ -251,6 +283,8 @@ export const universitiesRelations = relations(universities, ({ one, many }) => 
     references: [countries.id],
   }),
   programs: many(programs),
+  media: many(universityMedia),
+  reviews: many(universityReviews),
 }));
 
 export const programsRelations = relations(programs, ({ one }) => ({
@@ -265,6 +299,28 @@ export const programsRelations = relations(programs, ({ one }) => ({
   university: one(universities, {
     fields: [programs.universityId],
     references: [universities.id],
+  }),
+}));
+
+export const universityMediaRelations = relations(universityMedia, ({ one }) => ({
+  university: one(universities, {
+    fields: [universityMedia.universityId],
+    references: [universities.id],
+  }),
+  client: one(clients, {
+    fields: [universityMedia.clientId],
+    references: [clients.id],
+  }),
+}));
+
+export const universityReviewsRelations = relations(universityReviews, ({ one }) => ({
+  university: one(universities, {
+    fields: [universityReviews.universityId],
+    references: [universities.id],
+  }),
+  client: one(clients, {
+    fields: [universityReviews.clientId],
+    references: [clients.id],
   }),
 }));
 
@@ -328,6 +384,16 @@ export const insertSiteSettingsSchema = createInsertSchema(siteSettings).omit({
   updatedAt: true,
 });
 
+export const insertUniversityMediaSchema = createInsertSchema(universityMedia).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertUniversityReviewSchema = createInsertSchema(universityReviews).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Types
 export type Client = typeof clients.$inferSelect;
 export type InsertClient = z.infer<typeof insertClientSchema>;
@@ -358,3 +424,9 @@ export type InsertTestimonial = z.infer<typeof insertTestimonialSchema>;
 
 export type SiteSettings = typeof siteSettings.$inferSelect;
 export type InsertSiteSettings = z.infer<typeof insertSiteSettingsSchema>;
+
+export type UniversityMedia = typeof universityMedia.$inferSelect;
+export type InsertUniversityMedia = z.infer<typeof insertUniversityMediaSchema>;
+
+export type UniversityReview = typeof universityReviews.$inferSelect;
+export type InsertUniversityReview = z.infer<typeof insertUniversityReviewSchema>;
