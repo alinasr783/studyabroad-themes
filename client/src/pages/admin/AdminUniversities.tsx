@@ -66,16 +66,20 @@ interface Country {
 
 interface UniversityMedia {
   id?: string;
+  university_id?: string;
   media_type: 'image' | 'video';
   url: string;
   caption_ar?: string;
   caption_en?: string;
   is_featured: boolean;
   display_order: number;
+  type?: string;
+  client_id?: string;
 }
 
 interface UniversityReview {
   id?: string;
+  university_id?: string;
   student_name: string;
   student_nationality?: string;
   program_name?: string;
@@ -84,6 +88,7 @@ interface UniversityReview {
   review_text_ar?: string;
   review_text_en?: string;
   is_approved: boolean;
+  client_id?: string;
 }
 
 const AdminUniversities = () => {
@@ -170,7 +175,7 @@ const AdminUniversities = () => {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      
+
       // Transform null values to undefined to match interface
       const transformedData = (data || []).map(university => ({
         ...university,
@@ -205,7 +210,7 @@ const AdminUniversities = () => {
         commission_fee: university.commission_fee ?? undefined,
         preparation_fee: university.preparation_fee ?? undefined
       }));
-      
+
       setUniversities(transformedData);
     } catch (error) {
       console.error("Error fetching universities:", error);
@@ -236,6 +241,54 @@ const AdminUniversities = () => {
       toast({
         title: "خطأ",
         description: "حدث خطأ أثناء تحميل قائمة الدول",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const fetchUniversityMedia = async (universityId: string) => {
+    try {
+      const clientId = getClientId();
+      if (!clientId) return;
+
+      const { data, error } = await supabase
+        .from("university_media")
+        .select("*")
+        .eq("university_id", universityId)
+        .eq("client_id", clientId)
+        .order("display_order", { ascending: true });
+
+      if (error) throw error;
+      setUniversityMedia(data || []);
+    } catch (error) {
+      console.error("Error fetching university media:", error);
+      toast({
+        title: "خطأ",
+        description: "حدث خطأ أثناء تحميل ميديا الجامعة",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const fetchUniversityReviews = async (universityId: string) => {
+    try {
+      const clientId = getClientId();
+      if (!clientId) return;
+
+      const { data, error } = await supabase
+        .from("university_reviews")
+        .select("*")
+        .eq("university_id", universityId)
+        .eq("client_id", clientId)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setUniversityReviews(data || []);
+    } catch (error) {
+      console.error("Error fetching university reviews:", error);
+      toast({
+        title: "خطأ",
+        description: "حدث خطأ أثناء تحميل مراجعات الجامعة",
         variant: "destructive",
       });
     }
@@ -313,6 +366,74 @@ const AdminUniversities = () => {
     setUniversityReviews(updatedReviews);
   };
 
+  const saveUniversityMedia = async (universityId: string) => {
+    try {
+      const clientId = getClientId();
+      if (!clientId) return;
+
+      // Delete existing media for this university
+      const { error: deleteError } = await supabase
+        .from("university_media")
+        .delete()
+        .eq("university_id", universityId)
+        .eq("client_id", clientId);
+
+      if (deleteError) throw deleteError;
+
+      // Insert new media items
+      if (universityMedia.length > 0) {
+        const mediaToInsert = universityMedia.map(media => ({
+          ...media,
+          university_id: universityId,
+          client_id: clientId
+        }));
+
+        const { error: insertError } = await supabase
+          .from("university_media")
+          .insert(mediaToInsert);
+
+        if (insertError) throw insertError;
+      }
+    } catch (error) {
+      console.error("Error saving university media:", error);
+      throw error;
+    }
+  };
+
+  const saveUniversityReviews = async (universityId: string) => {
+    try {
+      const clientId = getClientId();
+      if (!clientId) return;
+
+      // Delete existing reviews for this university
+      const { error: deleteError } = await supabase
+        .from("university_reviews")
+        .delete()
+        .eq("university_id", universityId)
+        .eq("client_id", clientId);
+
+      if (deleteError) throw deleteError;
+
+      // Insert new review items
+      if (universityReviews.length > 0) {
+        const reviewsToInsert = universityReviews.map(review => ({
+          ...review,
+          university_id: universityId,
+          client_id: clientId
+        }));
+
+        const { error: insertError } = await supabase
+          .from("university_reviews")
+          .insert(reviewsToInsert);
+
+        if (insertError) throw insertError;
+      }
+    } catch (error) {
+      console.error("Error saving university reviews:", error);
+      throw error;
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -387,14 +508,14 @@ const AdminUniversities = () => {
         });
       }
 
-      // Note: Media and Reviews will be saved once the database tables are created in Supabase
-      // For now, we'll show success but won't save media and reviews to avoid errors
-      if (universityMedia.length > 0 || universityReviews.length > 0) {
-        toast({
-          title: "ملاحظة",
-          description: "تم حفظ بيانات الجامعة. سيتم حفظ الميديا والمراجعات عند إنشاء الجداول المطلوبة في قاعدة البيانات.",
-        });
-      }
+      // Save media and reviews
+      await saveUniversityMedia(universityId);
+      await saveUniversityReviews(universityId);
+
+      toast({
+        title: "تم الحفظ",
+        description: "تم حفظ بيانات الجامعة والميديا والمراجعات بنجاح",
+      });
 
       resetForm();
       fetchUniversities();
@@ -408,7 +529,7 @@ const AdminUniversities = () => {
     }
   };
 
-  const handleEdit = (university: University) => {
+  const handleEdit = async (university: University) => {
     const clientId = getClientId();
 
     if (university.client_id !== clientId) {
@@ -456,6 +577,11 @@ const AdminUniversities = () => {
       commission_fee: university.commission_fee?.toString() || "",
       preparation_fee: university.preparation_fee?.toString() || "",
     });
+
+    // Load existing media and reviews
+    await fetchUniversityMedia(university.id);
+    await fetchUniversityReviews(university.id);
+
     setShowForm(true);
   };
 
@@ -466,6 +592,20 @@ const AdminUniversities = () => {
       const clientId = getClientId();
       if (!clientId) return;
 
+      // First delete related media and reviews
+      await supabase
+        .from("university_media")
+        .delete()
+        .eq("university_id", id)
+        .eq("client_id", clientId);
+
+      await supabase
+        .from("university_reviews")
+        .delete()
+        .eq("university_id", id)
+        .eq("client_id", clientId);
+
+      // Then delete the university
       const { error: deleteError } = await supabase
         .from("universities")
         .delete()
@@ -476,7 +616,7 @@ const AdminUniversities = () => {
 
       toast({
         title: "تم الحذف",
-        description: "تم حذف الجامعة بنجاح",
+        description: "تم حذف الجامعة وبياناتها المرتبطة بنجاح",
       });
 
       fetchUniversities();
@@ -938,8 +1078,6 @@ const AdminUniversities = () => {
                     <Label htmlFor="scholarship_available">منح دراسية متاحة</Label>
                   </div>
                 </div>
-
-                {/* University Media Section */}
                 <div className="border-t pt-6">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-medium">ميديا الجامعة</h3>
@@ -968,7 +1106,7 @@ const AdminUniversities = () => {
                               <Trash2 className="w-4 h-4" />
                             </Button>
                           </div>
-                          
+
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
                               <Label>نوع الميديا</Label>
@@ -1075,7 +1213,7 @@ const AdminUniversities = () => {
                               <Trash2 className="w-4 h-4" />
                             </Button>
                           </div>
-                          
+
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
                               <Label>اسم الطالب</Label>

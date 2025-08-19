@@ -8,3 +8,242 @@
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
+{/* University Media Section */}
+<div className="border-t pt-6">
+  <div className="flex items-center justify-between mb-4">
+    <h3 className="text-lg font-medium">ميديا الجامعة</h3>
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      onClick={() => setShowMediaSection(!showMediaSection)}
+    >
+      {showMediaSection ? "إخفاء" : "إظهار"} الميديا
+    </Button>
+  </div>
+
+  {showMediaSection && (
+    <div className="space-y-4">
+      {universityMedia.map((media, index) => (
+        <div key={index} className="border rounded-lg p-4 space-y-4">
+          <div className="flex items-center justify-between">
+            <h4 className="font-medium">عنصر الميديا #{index + 1}</h4>
+            <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              onClick={() => removeMediaItem(index)}
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <Label>نوع الميديا</Label>
+              <Select
+                value={media.media_type}
+                onValueChange={(value) => updateMediaItem(index, 'media_type', value as 'image' | 'video')}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="image">صورة</SelectItem>
+                  <SelectItem value="video">فيديو</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>رابط الميديا</Label>
+              <Input
+                value={media.url}
+                onChange={(e) => updateMediaItem(index, 'url', e.target.value)}
+                placeholder="https://example.com/media.jpg"
+              />
+            </div>
+            <div>
+              <Label>ترتيب العرض</Label>
+              <Input
+                type="number"
+                min="0"
+                value={media.display_order}
+                onChange={(e) => updateMediaItem(index, 'display_order', parseInt(e.target.value) || 0)}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label>التوضيح بالعربية</Label>
+              <Input
+                value={media.caption_ar || ''}
+                onChange={(e) => updateMediaItem(index, 'caption_ar', e.target.value)}
+                placeholder="توضيح الصورة بالعربية"
+              />
+            </div>
+            <div>
+              <Label>التوضيح بالإنجليزية</Label>
+              <Input
+                value={media.caption_en || ''}
+                onChange={(e) => updateMediaItem(index, 'caption_en', e.target.value)}
+                placeholder="Caption in English"
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <Switch
+              checked={media.is_featured}
+              onCheckedChange={(checked) => updateMediaItem(index, 'is_featured', checked)}
+            />
+            <Label>ميديا مميز</Label>
+          </div>
+        </div>
+      ))}
+
+      <Button
+        type="button"
+        variant="outline"
+        onClick={addMediaItem}
+        className="w-full"
+      >
+        <Plus className="w-4 h-4 mr-2" />
+        إضافة عنصر ميديا جديد
+      </Button>
+    </div>
+  )}
+</div>
+
+{/* University Reviews Section */}
+<div className="border-t pt-6">
+  <div className="flex items-center justify-between mb-4">
+    <h3 className="text-lg font-medium">مراجعات الطلاب</h3>
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      onClick={() => setShowReviewsSection(!showReviewsSection)}
+    >
+      {showReviewsSection ? "إخفاء" : "إظهار"} المراجعات
+    </Button>
+  </div>
+
+  {showReviewsSection && (
+    <div className="space-y-4">
+      {universityReviews.map((review, index) => (
+        <div key={index} className="border rounded-lg p-4 space-y-4">
+          <div className="flex items-center justify-between">
+            <h4 className="font-medium">مراجعة #{index + 1}</h4>
+            <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              onClick={() => removeReviewItem(index)}
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <Label>اسم الطالب</Label>
+              <Input
+                value={review.student_name}
+                onChange={(e) => updateReviewItem(index, 'student_name', e.target.value)}
+                placeholder="أحمد محمد"
+                required
+              />
+            </div>
+            <div>
+              <Label>الجنسية</Label>
+              <Input
+                value={review.student_nationality || ''}
+                onChange={(e) => updateReviewItem(index, 'student_nationality', e.target.value)}
+                placeholder="مصر"
+              />
+            </div>
+            <div>
+              <Label>البرنامج الدراسي</Label>
+              <Input
+                value={review.program_name || ''}
+                onChange={(e) => updateReviewItem(index, 'program_name', e.target.value)}
+                placeholder="هندسة الحاسوب"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label>سنة التخرج</Label>
+              <Input
+                type="number"
+                min="2000"
+                max="2030"
+                value={review.graduation_year || ''}
+                onChange={(e) => updateReviewItem(index, 'graduation_year', parseInt(e.target.value) || undefined)}
+                placeholder="2024"
+              />
+            </div>
+            <div>
+              <Label>التقييم (1-5 نجوم)</Label>
+              <Select
+                value={review.rating.toString()}
+                onValueChange={(value) => updateReviewItem(index, 'rating', parseInt(value))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">⭐ (1)</SelectItem>
+                  <SelectItem value="2">⭐⭐ (2)</SelectItem>
+                  <SelectItem value="3">⭐⭐⭐ (3)</SelectItem>
+                  <SelectItem value="4">⭐⭐⭐⭐ (4)</SelectItem>
+                  <SelectItem value="5">⭐⭐⭐⭐⭐ (5)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div>
+            <Label>المراجعة بالعربية</Label>
+            <Textarea
+              value={review.review_text_ar || ''}
+              onChange={(e) => updateReviewItem(index, 'review_text_ar', e.target.value)}
+              placeholder="أكتب تجربة الطالب بالعربية..."
+              rows={3}
+            />
+          </div>
+
+          <div>
+            <Label>المراجعة بالإنجليزية</Label>
+            <Textarea
+              value={review.review_text_en || ''}
+              onChange={(e) => updateReviewItem(index, 'review_text_en', e.target.value)}
+              placeholder="Write student experience in English..."
+              rows={3}
+            />
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <Switch
+              checked={review.is_approved}
+              onCheckedChange={(checked) => updateReviewItem(index, 'is_approved', checked)}
+            />
+            <Label>مراجعة معتمدة</Label>
+          </div>
+        </div>
+      ))}
+
+      <Button
+        type="button"
+        variant="outline"
+        onClick={addReviewItem}
+        className="w-full"
+      >
+        <Plus className="w-4 h-4 mr-2" />
+        إضافة مراجعة جديدة
+      </Button>
+    </div>
+  )}
+</div>
