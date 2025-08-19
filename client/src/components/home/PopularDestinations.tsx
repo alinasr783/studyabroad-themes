@@ -29,18 +29,38 @@ const PopularDestinations = () => {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  // جلب إعدادات الموقع من Supabase
-  const { data: siteSettings } = useQuery<SiteSettings>({
-    queryKey: ['siteSettings'],
+  // الحصول على client_id بناءً على النطاق
+  const { data: clientData } = useQuery({
+    queryKey: ['clientInfo'],
     queryFn: async () => {
+      const domain = window.location.hostname;
       const { data, error } = await supabase
-        .from('site_settings')
-        .select('primary_color_1, primary_color_2, primary_color_3')
+        .from('clients')
+        .select('id')
+        .eq('domain', domain)
         .single();
 
       if (error) throw error;
       return data;
     }
+  });
+
+  // جلب إعدادات الموقع من Supabase بناءً على client_id
+  const { data: siteSettings } = useQuery<SiteSettings>({
+    queryKey: ['siteSettings', clientData?.id],
+    queryFn: async () => {
+      if (!clientData?.id) return null;
+
+      const { data, error } = await supabase
+        .from('site_settings')
+        .select('primary_color_1, primary_color_2, primary_color_3')
+        .eq('client_id', clientData.id)
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!clientData?.id
   });
 
   // تطبيق ألوان الموقع الديناميكية
@@ -62,6 +82,12 @@ const PopularDestinations = () => {
   useEffect(() => {
     const fetchPopularDestinations = async () => {
       try {
+        // التحقق من وجود client_id قبل جلب البيانات
+        if (!clientData?.id) {
+          setLoading(false);
+          return;
+        }
+
         const { data, error } = await supabase
           .from('countries')
           .select(`
@@ -75,6 +101,7 @@ const PopularDestinations = () => {
             slug
           `)
           .eq('is_featured', true)
+          .eq('client_id', clientData.id) // إضافة شرط client_id
           .order('created_at', { ascending: false })
           .limit(3);
 
@@ -96,7 +123,7 @@ const PopularDestinations = () => {
     };
 
     fetchPopularDestinations();
-  }, [toast]);
+  }, [toast, clientData?.id]); // إضافة clientData.id إلى dependencies
 
   // إنشاء ستايل ديناميكي للألوان
   const getButtonStyle = () => {
