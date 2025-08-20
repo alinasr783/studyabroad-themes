@@ -76,7 +76,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
   }
 
   return (
-    <div className="min-h-screen bg-muted/10">
+    <div className="min-h-screen bg-muted/10 ">
       {/* Header */}
       <header className="bg-background border-b shadow-sm">
         <div className="flex items-center justify-between px-6 py-4">

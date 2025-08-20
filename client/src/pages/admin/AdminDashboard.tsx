@@ -130,7 +130,8 @@ const AdminDashboard = () => {
   if (error) {
     return (
       <AdminLayout>
-        <div className="flex items-center justify-center h-64">
+        <div className="flex items-center justify-center h-64 ">
+
           <div className="text-center text-red-500">
             <p className="font-bold">خطأ!</p>
             <p>{error}</p>
