@@ -76,19 +76,19 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
   }
 
   return (
-    <div className="min-h-screen bg-muted/10 ">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-900 dark:to-gray-800">
       {/* Header */}
-      <header className="bg-background border-b shadow-sm">
+      <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-lg">
         <div className="flex items-center justify-between px-6 py-4">
           <div>
-            <h1 className="text-xl font-bold">لوحة التحكم</h1>
-            <p className="text-sm text-muted-foreground">
+            <h1 className="text-2xl font-bold text-gray-800 dark:text-white">لوحة التحكم</h1>
+            <p className="text-sm text-gray-600 dark:text-gray-300">
               {session?.client?.name || "مدير النظام"}
             </p>
           </div>
           <div className="flex items-center gap-4">
-            <span className="text-sm">{session?.full_name || session?.email || "زائر"}</span>
-            <Button onClick={handleLogout} variant="outline" size="sm">
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{session?.full_name || session?.email || "زائر"}</span>
+            <Button onClick={handleLogout} variant="outline" size="sm" className="border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:border-red-300 dark:hover:border-red-700">
               <LogOut className="w-4 h-4 ml-2" />
               تسجيل الخروج
             </Button>
@@ -98,20 +98,24 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
 
       <div className="flex">
         {/* Sidebar */}
-        <aside className="w-64 bg-background border-l min-h-[calc(100vh-80px)]">
+        <aside className="w-64 bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 min-h-[calc(100vh-80px)] shadow-lg">
           <nav className="p-4">
-            <div className="space-y-2">
+            <div className="space-y-1">
               {menuItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = location.pathname === item.path;
                 return (
                   <Button
                     key={item.path}
-                    variant={isActive ? "default" : "ghost"}
-                    className="w-full justify-start"
+                    variant="ghost"
+                    className={`w-full justify-start h-11 rounded-lg font-medium transition-all duration-200 ${
+                      isActive 
+                        ? "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 shadow-sm" 
+                        : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 hover:text-gray-900 dark:hover:text-white"
+                    }`}
                     onClick={() => navigate(item.path)}
                   >
-                    <Icon className="w-4 h-4 ml-2" />
+                    <Icon className="w-5 h-5 ml-3" />
                     {item.label}
                   </Button>
                 );
@@ -121,7 +125,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 p-6">{children}</main>
+        <main className="flex-1 p-6 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm">{children}</main>
       </div>
     </div>
   );

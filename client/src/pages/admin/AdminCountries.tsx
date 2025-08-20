@@ -341,7 +341,7 @@ const AdminCountries = () => {
             <h1 className="text-3xl font-bold">إدارة الدول</h1>
             <p className="text-muted-foreground">إضافة وتعديل دول الدراسة</p>
           </div>
-          <Button onClick={() => setShowForm(true)}>
+          <Button className="btn-admin-success" onClick={() => setShowForm(true)}>
             <Plus className="w-4 h-4 ml-2" />
             إضافة دولة جديدة
           </Button>
@@ -597,10 +597,10 @@ const AdminCountries = () => {
                 </div>
 
                 <div className="flex gap-4">
-                  <Button type="submit">
+                  <Button type="submit" className="btn-admin-primary">
                     {editingCountry ? "تحديث" : "إضافة"}
                   </Button>
-                  <Button type="button" variant="outline" onClick={resetForm}>
+                  <Button type="button" className="btn-admin-outline" onClick={resetForm}>
                     إلغاء
                   </Button>
                 </div>
@@ -654,10 +654,10 @@ const AdminCountries = () => {
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-2">
-                        <Button variant="outline" size="sm" onClick={() => handleEdit(country)}>
+                        <Button size="sm" className="btn-admin-info" onClick={() => handleEdit(country)}>
                           <Edit className="w-4 h-4" />
                         </Button>
-                        <Button variant="destructive" size="sm" onClick={() => handleDelete(country.id)}>
+                        <Button size="sm" className="btn-admin-danger" onClick={() => handleDelete(country.id)}>
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>

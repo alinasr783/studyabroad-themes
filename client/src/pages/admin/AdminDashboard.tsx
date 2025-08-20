@@ -105,13 +105,13 @@ const AdminDashboard = () => {
   };
 
   const statCards = [
-    { title: "الدول", value: stats.countries, icon: Globe, color: "text-blue-600" },
-    { title: "الجامعات", value: stats.universities, icon: GraduationCap, color: "text-green-600" },
-    { title: "البرامج الدراسية", value: stats.programs, icon: BookOpen, color: "text-purple-600" },
-    { title: "المقالات", value: stats.articles, icon: FileText, color: "text-orange-600" },
-    { title: "طلبات الاستشارة", value: stats.consultations, icon: MessageSquare, color: "text-red-600" },
-    { title: "رسائل التواصل", value: stats.messages, icon: MessageSquare, color: "text-yellow-600" },
-    { title: "آراء العملاء", value: stats.testimonials, icon: Star, color: "text-pink-600" },
+    { title: "الدول", value: stats.countries, icon: Globe, color: "text-blue-600 dark:text-blue-400", bg: "bg-blue-50 dark:bg-blue-900/20", border: "border-blue-200 dark:border-blue-800" },
+    { title: "الجامعات", value: stats.universities, icon: GraduationCap, color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-50 dark:bg-emerald-900/20", border: "border-emerald-200 dark:border-emerald-800" },
+    { title: "البرامج الدراسية", value: stats.programs, icon: BookOpen, color: "text-purple-600 dark:text-purple-400", bg: "bg-purple-50 dark:bg-purple-900/20", border: "border-purple-200 dark:border-purple-800" },
+    { title: "المقالات", value: stats.articles, icon: FileText, color: "text-orange-600 dark:text-orange-400", bg: "bg-orange-50 dark:bg-orange-900/20", border: "border-orange-200 dark:border-orange-800" },
+    { title: "طلبات الاستشارة", value: stats.consultations, icon: MessageSquare, color: "text-red-600 dark:text-red-400", bg: "bg-red-50 dark:bg-red-900/20", border: "border-red-200 dark:border-red-800" },
+    { title: "رسائل التواصل", value: stats.messages, icon: MessageSquare, color: "text-amber-600 dark:text-amber-400", bg: "bg-amber-50 dark:bg-amber-900/20", border: "border-amber-200 dark:border-amber-800" },
+    { title: "آراء العملاء", value: stats.testimonials, icon: Star, color: "text-pink-600 dark:text-pink-400", bg: "bg-pink-50 dark:bg-pink-900/20", border: "border-pink-200 dark:border-pink-800" },
   ];
 
   if (loading) {
@@ -119,8 +119,8 @@ const AdminDashboard = () => {
       <AdminLayout>
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-            <p>جاري تحميل البيانات...</p>
+            <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-200 border-t-blue-600 dark:border-gray-600 dark:border-t-blue-400 mx-auto mb-6"></div>
+            <p className="text-gray-600 dark:text-gray-300 font-medium">جاري تحميل البيانات...</p>
           </div>
         </div>
       </AdminLayout>
@@ -130,12 +130,13 @@ const AdminDashboard = () => {
   if (error) {
     return (
       <AdminLayout>
-        <div className="flex items-center justify-center h-64 ">
-
-          <div className="text-center text-red-500">
-            <p className="font-bold">خطأ!</p>
-            <p>{error}</p>
-            {clientId && <p className="text-sm mt-2">Client ID: {clientId}</p>}
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center bg-red-50 dark:bg-red-900/20 p-8 rounded-lg border border-red-200 dark:border-red-800">
+            <div className="text-red-600 dark:text-red-400">
+              <p className="font-bold text-lg mb-2">خطأ!</p>
+              <p className="mb-4">{error}</p>
+              {clientId && <p className="text-sm opacity-80">Client ID: {clientId}</p>}
+            </div>
           </div>
         </div>
       </AdminLayout>
@@ -144,23 +145,25 @@ const AdminDashboard = () => {
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">لوحة التحكم</h1>
-          <p className="text-muted-foreground">نظرة عامة على موقعك {clientId && `(Client ID: ${clientId})`}</p>
+      <div className="space-y-8">
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+          <h1 className="text-3xl font-bold text-gray-800 dark:text-white mb-2">لوحة التحكم</h1>
+          <p className="text-gray-600 dark:text-gray-300">نظرة عامة على موقعك {clientId && `(Client ID: ${clientId})`}</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {statCards.map((card, index) => {
             const Icon = card.icon;
             return (
-              <Card key={index}>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">{card.title}</CardTitle>
-                  <Icon className={`h-4 w-4 ${card.color}`} />
+              <Card key={index} className={`${card.bg} border-2 ${card.border} hover:shadow-lg transition-all duration-200 hover:-translate-y-1`}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+                  <CardTitle className="text-sm font-semibold text-gray-700 dark:text-gray-200">{card.title}</CardTitle>
+                  <div className={`p-2 rounded-lg ${card.bg}`}>
+                    <Icon className={`h-5 w-5 ${card.color}`} />
+                  </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{card.value}</div>
+                  <div className={`text-3xl font-bold ${card.color}`}>{card.value}</div>
                 </CardContent>
               </Card>
             );
@@ -168,25 +171,37 @@ const AdminDashboard = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>أحدث طلبات الاستشارة</CardTitle>
+          <Card className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg">
+            <CardHeader className="border-b border-gray-100 dark:border-gray-700">
+              <CardTitle className="text-lg font-semibold text-gray-800 dark:text-white flex items-center">
+                <MessageSquare className="w-5 h-5 ml-2 text-blue-600 dark:text-blue-400" />
+                أحدث طلبات الاستشارة
+              </CardTitle>
             </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">
-                لا توجد طلبات جديدة
-              </p>
+            <CardContent className="pt-6">
+              <div className="text-center py-8">
+                <MessageSquare className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+                <p className="text-gray-500 dark:text-gray-400 font-medium">
+                  لا توجد طلبات جديدة
+                </p>
+              </div>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>أحدث رسائل التواصل</CardTitle>
+          <Card className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg">
+            <CardHeader className="border-b border-gray-100 dark:border-gray-700">
+              <CardTitle className="text-lg font-semibold text-gray-800 dark:text-white flex items-center">
+                <MessageSquare className="w-5 h-5 ml-2 text-green-600 dark:text-green-400" />
+                أحدث رسائل التواصل
+              </CardTitle>
             </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">
-                لا توجد رسائل جديدة
-              </p>
+            <CardContent className="pt-6">
+              <div className="text-center py-8">
+                <MessageSquare className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+                <p className="text-gray-500 dark:text-gray-400 font-medium">
+                  لا توجد رسائل جديدة
+                </p>
+              </div>
             </CardContent>
           </Card>
         </div>

@@ -83,20 +83,20 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-      <Card className="w-full max-w-md shadow-lg">
-        <CardHeader className="text-center space-y-2">
-          <CardTitle className="text-2xl font-bold text-gray-800">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 p-4">
+      <Card className="w-full max-w-md shadow-2xl border-0 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm">
+        <CardHeader className="text-center space-y-2 pb-6">
+          <CardTitle className="text-3xl font-bold text-gray-800 dark:text-white">
             تسجيل دخول المدير
           </CardTitle>
-          <CardDescription className="text-gray-600">
+          <CardDescription className="text-gray-600 dark:text-gray-300">
             يرجى إدخال بيانات الاعتماد الخاصة بك
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleLogin} className="space-y-5">
+          <form onSubmit={handleLogin} className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-gray-700">
+              <Label htmlFor="email" className="text-sm font-medium text-gray-700 dark:text-gray-200">
                 البريد الإلكتروني
               </Label>
               <Input
@@ -107,14 +107,14 @@ const Login = () => {
                 onChange={handleInputChange}
                 required
                 placeholder="example@domain.com"
-                className="border-gray-300 focus:border-primary focus:ring-primary"
+                className="h-11 border-2 border-gray-200 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500 dark:focus:border-blue-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg transition-all duration-200"
                 dir="ltr"
                 autoComplete="username"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-gray-700">
+              <Label htmlFor="password" className="text-sm font-medium text-gray-700 dark:text-gray-200">
                 كلمة المرور
               </Label>
               <Input
@@ -125,7 +125,7 @@ const Login = () => {
                 onChange={handleInputChange}
                 required
                 placeholder="••••••••"
-                className="border-gray-300 focus:border-primary focus:ring-primary"
+                className="h-11 border-2 border-gray-200 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500 dark:focus:border-blue-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg transition-all duration-200"
                 dir="ltr"
                 autoComplete="current-password"
                 minLength={8}
@@ -134,7 +134,7 @@ const Login = () => {
 
             <Button 
               type="submit" 
-              className="w-full bg-primary hover:bg-primary-dark transition-colors"
+              className="w-full h-12 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 dark:from-blue-500 dark:to-blue-600 dark:hover:from-blue-600 dark:hover:to-blue-700 text-white font-medium rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200"
               disabled={loading}
             >
               {loading ? "جاري تسجيل الدخول..." : "تسجيل الدخول"}
