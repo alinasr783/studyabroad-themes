@@ -122,13 +122,11 @@ const LogoCenteredLoader = ({ siteSettings }) => {
             alt="Company Logo" 
             className="w-full h-full object-cover"
             initial={{ scale: 0.95 }}
-            animate={{ 
-              scale: [0.98, 1.02, 0.98],
-              transition: {
-                duration: 1.2,
-                repeat: Infinity,
-                ease: "easeInOut"
-              }
+            animate={{ scale: [0.98, 1.02, 0.98] }}
+            transition={{
+              duration: 1.2,
+              repeat: Infinity,
+              ease: "easeInOut"
             }}
           />
         </motion.div>
