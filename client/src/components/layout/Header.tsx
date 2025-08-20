@@ -178,7 +178,7 @@ const Header = () => {
             <img 
               src={siteSettings.logo_url} 
               alt="Logo" 
-              className="w-30 h-20 object-contain"
+              className="h-10 w-auto object-contain"
             />
           ) : (
             <div 
