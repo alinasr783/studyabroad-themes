@@ -59,6 +59,25 @@ interface SiteSettings {
   primary_color_1?: string;
   primary_color_2?: string;
   primary_color_3?: string;
+  whatsapp_number?: string;
+  whatsapp_title?: string;
+  whatsapp_description?: string;
+  email?: string;
+  phone_numbers?: string[];
+  email_addresses?: string[];
+  office_location?: string;
+  working_hours?: string;
+  facebook_url?: string;
+  instagram_url?: string;
+  twitter_url?: string;
+  linkedin_url?: string;
+  youtube_url?: string;
+  tiktok_url?: string;
+  snapchat_url?: string;
+  map_link?: string;
+  map_placeholder?: string;
+  newsletter_title?: string;
+  newsletter_description?: string;
 }
 
 // نوع بيانات نموذج النشرة الإخبارية
@@ -67,56 +86,61 @@ interface NewsletterFormData {
 }
 
 const Footer = () => {
-  // الحصول على client_id بناءً على النطاق
-  const { data: clientData } = useQuery({
-    queryKey: ['clientInfo'],
+  // استخدام client_id المحدد مباشرة
+  const clientId = '6b9bc8b0-46cd-4960-bfa2-ae4b5d8dd6c9';
+
+  // جلب بيانات التواصل من Supabase بناءً على client_id
+  const { data: contactInfo } = useQuery<ContactInfo>({
+    queryKey: ['contactInfo', clientId],
     queryFn: async () => {
-      const domain = window.location.hostname;
       const { data, error } = await supabase
-        .from('clients')
-        .select('id')
-        .eq('domain', domain)
+        .from('contact_info')
+        .select('*')
+        .eq('client_id', clientId)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching contact info:', error);
+        return null;
+      }
       return data;
     }
   });
 
-  // جلب بيانات التواصل من Supabase بناءً على client_id
-  const { data: contactInfo } = useQuery<ContactInfo>({
-    queryKey: ['contactInfo', clientData?.id],
+  // جلب إعدادات الموقع من Supabase بناءً على client_id
+  const { data: siteSettings } = useQuery<SiteSettings>({
+    queryKey: ['siteSettings', clientId],
     queryFn: async () => {
-      if (!clientData?.id) return null;
-
       const { data, error } = await supabase
-        .from('contact_info')
+        .from('site_settings')
         .select('*')
-        .eq('client_id', clientData.id)
+        .eq('client_id', clientId)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching site settings:', error);
+        return null;
+      }
       return data;
-    },
-    enabled: !!clientData?.id
+    }
   });
 
-  // جلب إعدادات الموقع من Supabase بناءً على client_id - التصحيح هنا
-  const { data: siteSettings } = useQuery<SiteSettings>({
-    queryKey: ['siteSettings', clientData?.id],
+  // جلب بيانات العميل
+  const { data: clientData } = useQuery({
+    queryKey: ['clientData', clientId],
     queryFn: async () => {
-      if (!clientData?.id) return null;
-
       const { data, error } = await supabase
-        .from('site_settings') // ← تم التصحيح هنا
+        .from('clients')
         .select('*')
-        .eq('client_id', clientData.id)
+        .eq('id', clientId)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching client data:', error);
+        return null;
+      }
       return data;
-    },
-    enabled: !!clientData?.id
+    }
   });
 
   // تطبيق ألوان الموقع الديناميكية
@@ -143,7 +167,10 @@ const Footer = () => {
     mutationFn: async (email: string) => {
       const { error } = await supabase
         .from('newsletter_subscribers')
-        .insert({ email, client_id: clientData?.id });
+        .insert({ 
+          email, 
+          client_id: clientId 
+        });
 
       if (error) throw error;
     },
@@ -152,7 +179,7 @@ const Footer = () => {
       reset();
     },
     onError: (error) => {
-      toast.error('حدث خطأ أثناء الاشتراك. يرجى المحاولة مرة أخرى.');
+      toast.error('حدث خطأ أثناء الاشتراك، يرجى المحاولة مرة أخرى');
       console.error('Newsletter subscription error:', error);
     }
   });
@@ -186,6 +213,29 @@ const Footer = () => {
     { icon: Snapchat, key: 'snapchat', label: 'Snapchat' },
   ];
 
+  // دالة للحصول على رابط وسائل التواصل الاجتماعي
+  const getSocialLink = (key: string) => {
+    if (contactInfo?.social_links?.[key as keyof typeof contactInfo.social_links]) {
+      return contactInfo.social_links[key as keyof typeof contactInfo.social_links];
+    }
+
+    if (siteSettings) {
+      const socialMap: Record<string, string | undefined> = {
+        'facebook': siteSettings.facebook_url,
+        'twitter': siteSettings.twitter_url,
+        'instagram': siteSettings.instagram_url,
+        'linkedin': siteSettings.linkedin_url,
+        'youtube': siteSettings.youtube_url,
+        'tiktok': siteSettings.tiktok_url,
+        'snapchat': siteSettings.snapchat_url
+      };
+
+      return socialMap[key];
+    }
+
+    return null;
+  };
+
   // إنشاء ستايل ديناميكي للألوان
   const getGradientStyle = () => {
     if (!siteSettings) return {};
@@ -196,6 +246,72 @@ const Footer = () => {
     };
   };
 
+  // الحصول على أرقام الهواتف
+  const getPhoneNumbers = () => {
+    if (contactInfo?.phone_numbers?.length > 0) {
+      return contactInfo.phone_numbers;
+    }
+    if (siteSettings?.phone_numbers?.length > 0) {
+      return siteSettings.phone_numbers;
+    }
+    if (clientData?.phone) {
+      return [clientData.phone];
+    }
+    return ['لم يتم تحديد رقم هاتف'];
+  };
+
+  // الحصول على عناوين البريد الإلكتروني
+  const getEmailAddresses = () => {
+    if (contactInfo?.email_addresses?.length > 0) {
+      return contactInfo.email_addresses;
+    }
+    if (siteSettings?.email_addresses?.length > 0) {
+      return siteSettings.email_addresses;
+    }
+    if (siteSettings?.email) {
+      return [siteSettings.email];
+    }
+    if (clientData?.email) {
+      return [clientData.email];
+    }
+    return ['info@example.com'];
+  };
+
+  // الحصول على العنوان
+  const getAddress = () => {
+    return contactInfo?.address || siteSettings?.office_location || 'الرياض، المملكة العربية السعودية';
+  };
+
+  // الحصول على ساعات العمل
+  const getWorkingHours = () => {
+    return contactInfo?.working_hours || siteSettings?.working_hours;
+  };
+
+  // الحصول على وصف النشرة الإخبارية
+  const getNewsletterDescription = () => {
+    return contactInfo?.newsletter_description || siteSettings?.newsletter_description || 'اشترك في نشرتنا البريدية لتصلك آخر العروض والأخبار';
+  };
+
+  // الحصول على عنوان النشرة الإخبارية
+  const getNewsletterTitle = () => {
+    return contactInfo?.newsletter_title || siteSettings?.newsletter_title || 'النشرة الإخبارية';
+  };
+
+  // الحصول على رابط الشعار
+  const getLogoUrl = () => {
+    return siteSettings?.logo_url || clientData?.logo_url;
+  };
+
+  // الحصول على اسم الموقع
+  const getSiteName = () => {
+    return siteSettings?.site_name_ar || clientData?.name || 'Study Abroad';
+  };
+
+  // الحصول على وصف الموقع
+  const getTagline = () => {
+    return siteSettings?.tagline_ar || clientData?.description || 'دليلك للدراسة في الخارج';
+  };
+
   return (
     <footer className="bg-background border-t">
       <div className="container px-4 py-12 mx-auto">
@@ -204,9 +320,9 @@ const Footer = () => {
           {/* معلومات الشركة */}
           <div className="space-y-4">
             <Link to="/" className="flex items-center gap-3">
-              {siteSettings?.logo_url ? (
+              {getLogoUrl() ? (
                 <img 
-                  src={siteSettings.logo_url} 
+                  src={getLogoUrl()} 
                   alt="Logo" 
                   className="w-10 h-10 object-contain"
                 />
@@ -222,10 +338,10 @@ const Footer = () => {
               )}
               <div className="flex flex-col">
                 <span className="font-bold text-lg">
-                  {siteSettings?.site_name_ar || 'Study Abroad'}
+                  {getSiteName()}
                 </span>
                 <span className="text-sm text-muted-foreground">
-                  {siteSettings?.tagline_ar || 'دليلك للدراسة في الخارج'}
+                  {getTagline()}
                 </span>
               </div>
             </Link>
@@ -235,7 +351,7 @@ const Footer = () => {
             <div className="flex gap-2 flex-wrap">
               {socialLinks.map((social) => {
                 const Icon = social.icon;
-                const link = contactInfo?.social_links?.[social.key as keyof typeof contactInfo.social_links];
+                const link = getSocialLink(social.key);
                 return link ? (
                   <Button
                     key={social.key}
@@ -301,30 +417,36 @@ const Footer = () => {
               <div className="flex items-center gap-3 text-sm text-muted-foreground">
                 <Phone className="h-4 w-4 text-primary flex-shrink-0" />
                 <div>
-                  {contactInfo?.phone_numbers?.map((phone, index) => (
+                  {getPhoneNumbers().map((phone, index) => (
                     <div key={index}>{phone}</div>
-                  )) || 'لم يتم تحديد رقم هاتف'}
+                  ))}
                 </div>
               </div>
               <div className="flex items-center gap-3 text-sm text-muted-foreground">
                 <Mail className="h-4 w-4 text-primary flex-shrink-0" />
                 <div>
-                  {contactInfo?.email_addresses?.map((email, index) => (
+                  {getEmailAddresses().map((email, index) => (
                     <div key={index}>{email}</div>
-                  )) || 'info@example.com'}
+                  ))}
                 </div>
               </div>
               <div className="flex items-center gap-3 text-sm text-muted-foreground">
                 <MapPin className="h-4 w-4 text-primary flex-shrink-0" />
-                <span>{contactInfo?.address || 'الرياض، المملكة العربية السعودية'}</span>
+                <span>{getAddress()}</span>
               </div>
+              {getWorkingHours() && (
+                <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                  <span>⏰</span>
+                  <span>{getWorkingHours()}</span>
+                </div>
+              )}
             </div>
 
             {/* قسم النشرة الإخبارية */}
             <div className="space-y-3">
-              <h4 className="font-medium">{contactInfo?.newsletter_title || 'النشرة الإخبارية'}</h4>
+              <h4 className="font-medium">{getNewsletterTitle()}</h4>
               <p className="text-sm text-muted-foreground">
-                {contactInfo?.newsletter_description || 'اشترك في نشرتنا البريدية لتصلك آخر العروض والأخبار'}
+                {getNewsletterDescription()}
               </p>
               <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col sm:flex-row gap-2">
                 <Input 
@@ -357,7 +479,7 @@ const Footer = () => {
         {/* حقوق النشر */}
         <div className="border-t mt-8 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-sm text-muted-foreground text-center md:text-start">
-            © {new Date().getFullYear()} {siteSettings?.site_name_ar || 'Study Abroad'}. جميع الحقوق محفوظة.
+            © {new Date().getFullYear()} {getSiteName()}. جميع الحقوق محفوظة.
           </p>
           <div className="flex flex-wrap justify-center gap-4">
             <Link to="/privacy" className="text-sm text-muted-foreground hover:text-primary transition-colors">
@@ -383,4 +505,4 @@ const Footer = () => {
   );
 };
 
-export default Footer; 
+export default Footer;
