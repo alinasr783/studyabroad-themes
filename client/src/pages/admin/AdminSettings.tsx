@@ -53,23 +53,23 @@ interface SiteSettings {
 const AdminSettings = () => {
   const [settings, setSettings] = useState<SiteSettings>({
     client_id: "",
-    site_name_ar: "موقع الدراسة بالخارج",
-    site_name_en: "Study Abroad Site",
-    tagline_ar: "شعار الموقع بالعربية",
-    tagline_en: "Site tagline in English",
+    site_name_ar: "",
+    site_name_en: "",
+    tagline_ar: "",
+    tagline_en: "",
     logo_url: "",
     logo_animation: "",
     primary_color_1: "#3b82f6",
     primary_color_2: "#1e40af",
     primary_color_3: "#1e3a8a",
     whatsapp_number: "",
-    whatsapp_title: "تواصل معنا عبر واتساب",
-    whatsapp_description: "نحن متاحون للرد على استفساراتك عبر واتساب",
+    whatsapp_title: "",
+    whatsapp_description: "",
     email: "",
     phone_numbers: [],
     email_addresses: [],
     office_location: "",
-    working_hours: "الأحد - الخميس: 9 ص - 5 م",
+    working_hours: "",
     facebook_url: "",
     instagram_url: "",
     twitter_url: "",
@@ -79,8 +79,8 @@ const AdminSettings = () => {
     snapchat_url: "",
     map_link: "",
     map_placeholder: "",
-    newsletter_title: "النشرة الإخبارية",
-    newsletter_description: "اشترك في نشرتنا البريدية لتصلك آخر العروض والأخبار",
+    newsletter_title: "",
+    newsletter_description: "",
     show_countries_section: true,
     show_universities_section: true,
     show_programs_section: true,
@@ -140,9 +140,28 @@ const AdminSettings = () => {
       if (error && error.code !== 'PGRST116') throw error;
 
       if (data) {
-        setSettings(data);
+        // التأكد من أن المصفوفات ليست null
+        const settingsData = {
+          ...data,
+          phone_numbers: data.phone_numbers || [],
+          email_addresses: data.email_addresses || []
+        };
+        setSettings(settingsData);
       } else {
-        setSettings(prev => ({ ...prev, client_id: clientId }));
+        // إعدادات افتراضية عند عدم وجود إعدادات سابقة
+        setSettings(prev => ({ 
+          ...prev, 
+          client_id: clientId,
+          site_name_ar: "موقع الدراسة بالخارج",
+          site_name_en: "Study Abroad Site",
+          tagline_ar: "شعار الموقع بالعربية",
+          tagline_en: "Site tagline in English",
+          whatsapp_title: "تواصل معنا عبر واتساب",
+          whatsapp_description: "نحن متاحون للرد على استفساراتك عبر واتساب",
+          working_hours: "الأحد - الخميس: 9 ص - 5 م",
+          newsletter_title: "النشرة الإخبارية",
+          newsletter_description: "اشترك في نشرتنا البريدية لتصلك آخر العروض والأخبار"
+        }));
       }
     } catch (error) {
       console.error("Error fetching settings:", error);
@@ -166,9 +185,14 @@ const AdminSettings = () => {
   };
 
   const handleArrayInputChange = (name: string, value: string) => {
+    // تحويل النص إلى مصفوفة وإزالة القيم الفارغة
+    const arrayValue = value.split(',')
+      .map(item => item.trim())
+      .filter(item => item.length > 0);
+
     setSettings(prev => ({
       ...prev,
-      [name]: value.split(',').map(item => item.trim()),
+      [name]: arrayValue,
     }));
   };
 
@@ -196,36 +220,56 @@ const AdminSettings = () => {
       }
 
       const { client_id } = JSON.parse(session);
-      const settingsData = { ...settings, client_id };
+
+      // تنظيف البيانات قبل الإرسال
+      const settingsData = { 
+        ...settings, 
+        client_id,
+        // التأكد من أن المصفوفات ليست undefined
+        phone_numbers: settings.phone_numbers || [],
+        email_addresses: settings.email_addresses || []
+      };
+
+      // إزالة الحقل id إذا كان فارغاً
+      if (!settingsData.id) {
+        delete settingsData.id;
+      }
+
+      let error;
 
       if (settings.id) {
-        const { error } = await supabase
+        const { error: updateError } = await supabase
           .from("site_settings")
           .update(settingsData)
-          .eq("id", settings.id)
-          .eq("client_id", client_id);
+          .eq("id", settings.id);
 
-        if (error) throw error;
+        error = updateError;
       } else {
-        const { data, error } = await supabase
+        const { error: insertError } = await supabase
           .from("site_settings")
-          .insert(settingsData)
-          .select()
-          .single();
+          .insert(settingsData);
 
-        if (error) throw error;
-        setSettings(data);
+        error = insertError;
+      }
+
+      if (error) {
+        console.error("Supabase error:", error);
+        throw new Error(error.message);
       }
 
       toast({
         title: "تم الحفظ",
         description: "تم حفظ إعدادات الموقع بنجاح",
       });
+
+      // إعادة تحميل الإعدادات للتأكد من أننا لدينا أحدث نسخة
+      await fetchSettings(client_id);
+
     } catch (error) {
       console.error("Error saving settings:", error);
       toast({
         title: "خطأ",
-        description: "حدث خطأ أثناء حفظ الإعدادات",
+        description: "حدث خطأ أثناء حفظ الإعدادات: " + (error instanceof Error ? error.message : "خطأ غير معروف"),
         variant: "destructive",
       });
     } finally {
@@ -695,6 +739,7 @@ const AdminSettings = () => {
             {saving ? "جاري الحفظ..." : "حفظ جميع الإعدادات"}
           </Button>
         </div>
+
       </div>
     </AdminLayout>
   );

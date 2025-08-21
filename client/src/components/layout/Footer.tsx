@@ -101,14 +101,14 @@ const Footer = () => {
     enabled: !!clientData?.id
   });
 
-  // جلب إعدادات الموقع من Supabase بناءً على client_id
+  // جلب إعدادات الموقع من Supabase بناءً على client_id - التصحيح هنا
   const { data: siteSettings } = useQuery<SiteSettings>({
     queryKey: ['siteSettings', clientData?.id],
     queryFn: async () => {
       if (!clientData?.id) return null;
 
       const { data, error } = await supabase
-        .from('site_settings')
+        .from('site_settings') // ← تم التصحيح هنا
         .select('*')
         .eq('client_id', clientData.id)
         .single();
@@ -321,7 +321,7 @@ const Footer = () => {
             </div>
 
             {/* قسم النشرة الإخبارية */}
-            {/* <div className="space-y-3">
+            <div className="space-y-3">
               <h4 className="font-medium">{contactInfo?.newsletter_title || 'النشرة الإخبارية'}</h4>
               <p className="text-sm text-muted-foreground">
                 {contactInfo?.newsletter_description || 'اشترك في نشرتنا البريدية لتصلك آخر العروض والأخبار'}
@@ -350,7 +350,7 @@ const Footer = () => {
                   {newsletterMutation.isPending ? 'جاري الإرسال...' : 'اشترك'}
                 </Button>
               </form>
-            </div> */}
+            </div>
           </div>
         </div>
 
@@ -383,4 +383,4 @@ const Footer = () => {
   );
 };
 
-export default Footer;
+export default Footer; 
