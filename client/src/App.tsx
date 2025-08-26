@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
+
 import "./App.css";
 
 import Index from "./pages/Index";
@@ -37,6 +38,7 @@ import CreateClient from "./pages/platform/CreateClient";
 import PlatformStats from "./pages/platform/PlatformStats";
 import PlatformUsers from "./pages/platform/PlatformUsers";
 import NotFound from "./pages/NotFound";
+import WhatsAppButtonWrapper from "./components/WhatsAppButtonWrapper";
 
 const queryClient = new QueryClient();
 
@@ -266,6 +268,7 @@ const App = () => {
                   <Route path="*" element={<PageTransition><NotFound /></PageTransition>} />
                 </Routes>
               </AnimatePresence>
+              <WhatsAppButtonWrapper />
             </BrowserRouter>
           )}
         </AnimatePresence>

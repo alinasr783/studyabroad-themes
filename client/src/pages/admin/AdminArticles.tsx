@@ -295,7 +295,7 @@ const AdminArticles = () => {
     return (
       <AdminLayout>
         <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#6366f1]"></div>
         </div>
       </AdminLayout>
     );
@@ -319,152 +319,168 @@ const AdminArticles = () => {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold">إدارة المقالات</h1>
-            <p className="text-muted-foreground">إدارة المقالات والمحتوى التعليمي</p>
+            <h1 className="text-3xl font-bold text-[#1e293b]">إدارة المقالات</h1>
+            <p className="text-[#64748b]">إدارة المقالات والمحتوى التعليمي</p>
           </div>
 
           <Dialog open={showForm} onOpenChange={setShowForm}>
             <DialogTrigger asChild>
-              <Button onClick={() => resetForm()}>
+              <Button 
+                className="bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] hover:from-[#4f46e5] hover:to-[#7c3aed] text-white"
+                onClick={() => resetForm()}
+              >
                 <Plus className="w-4 h-4 ml-2" />
                 إضافة مقال جديد
               </Button>
             </DialogTrigger>
 
-            <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-              <DialogHeader>
+            <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto bg-[#f8fafc] border-[#e2e8f0]">
+              <DialogHeader className="bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] text-white p-4 rounded-t-lg">
                 <DialogTitle>
                   {editingArticle ? "تعديل المقال" : "إضافة مقال جديد"}
                 </DialogTitle>
               </DialogHeader>
 
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmit} className="space-y-4 p-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="title_ar">العنوان بالعربية *</Label>
+                    <Label htmlFor="title_ar" className="text-[#374151]">العنوان بالعربية *</Label>
                     <Input
                       id="title_ar"
                       value={formData.title_ar}
                       onChange={(e) => handleInputChange("title_ar", e.target.value)}
                       required
+                      className="border-[#d1d5db] focus:border-[#6366f1] focus:ring-[#6366f1]"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="title_en">العنوان بالإنجليزية</Label>
+                    <Label htmlFor="title_en" className="text-[#374151]">العنوان بالإنجليزية</Label>
                     <Input
                       id="title_en"
                       value={formData.title_en}
                       onChange={(e) => handleInputChange("title_en", e.target.value)}
+                      className="border-[#d1d5db] focus:border-[#6366f1] focus:ring-[#6366f1]"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="slug">الرابط المختصر *</Label>
+                    <Label htmlFor="slug" className="text-[#374151]">الرابط المختصر *</Label>
                     <Input
                       id="slug"
                       value={formData.slug}
                       onChange={(e) => handleInputChange("slug", e.target.value)}
                       required
+                      className="border-[#d1d5db] focus:border-[#6366f1] focus:ring-[#6366f1]"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="category">التصنيف</Label>
+                    <Label htmlFor="category" className="text-[#374151]">التصنيف</Label>
                     <Input
                       id="category"
                       value={formData.category}
                       onChange={(e) => handleInputChange("category", e.target.value)}
+                      className="border-[#d1d5db] focus:border-[#6366f1] focus:ring-[#6366f1]"
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="excerpt_ar">المقتطف بالعربية</Label>
+                    <Label htmlFor="excerpt_ar" className="text-[#374151]">المقتطف بالعربية</Label>
                     <Textarea
                       id="excerpt_ar"
                       value={formData.excerpt_ar}
                       onChange={(e) => handleInputChange("excerpt_ar", e.target.value)}
                       rows={3}
+                      className="border-[#d1d5db] focus:border-[#6366f1] focus:ring-[#6366f1]"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="excerpt_en">المقتطف بالإنجليزية</Label>
+                    <Label htmlFor="excerpt_en" className="text-[#374151]">المقتطف بالإنجليزية</Label>
                     <Textarea
                       id="excerpt_en"
                       value={formData.excerpt_en}
                       onChange={(e) => handleInputChange("excerpt_en", e.target.value)}
                       rows={3}
+                      className="border-[#d1d5db] focus:border-[#6366f1] focus:ring-[#6366f1]"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <Label htmlFor="content_ar">المحتوى بالعربية *</Label>
+                  <Label htmlFor="content_ar" className="text-[#374151]">المحتوى بالعربية *</Label>
                   <Textarea
                     id="content_ar"
                     value={formData.content_ar}
                     onChange={(e) => handleInputChange("content_ar", e.target.value)}
                     rows={6}
                     required
+                    className="border-[#d1d5db] focus:border-[#6366f1] focus:ring-[#6366f1]"
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="content_en">المحتوى بالإنجليزية</Label>
+                  <Label htmlFor="content_en" className="text-[#374151]">المحتوى بالإنجليزية</Label>
                   <Textarea
                     id="content_en"
                     value={formData.content_en}
                     onChange={(e) => handleInputChange("content_en", e.target.value)}
                     rows={6}
+                    className="border-[#d1d5db] focus:border-[#6366f1] focus:ring-[#6366f1]"
                   />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="featured_image">رابط الصورة الرئيسية</Label>
+                    <Label htmlFor="featured_image" className="text-[#374151]">رابط الصورة الرئيسية</Label>
                     <Input
                       id="featured_image"
                       value={formData.featured_image}
                       onChange={(e) => handleInputChange("featured_image", e.target.value)}
+                      className="border-[#d1d5db] focus:border-[#6366f1] focus:ring-[#6366f1]"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="reading_time">وقت القراءة (دقائق)</Label>
+                    <Label htmlFor="reading_time" className="text-[#374151]">وقت القراءة (دقائق)</Label>
                     <Input
                       id="reading_time"
                       type="number"
                       min="1"
                       value={formData.reading_time}
                       onChange={(e) => handleInputChange("reading_time", e.target.value)}
+                      className="border-[#d1d5db] focus:border-[#6366f1] focus:ring-[#6366f1]"
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="author_name">اسم الكاتب</Label>
+                    <Label htmlFor="author_name" className="text-[#374151]">اسم الكاتب</Label>
                     <Input
                       id="author_name"
                       value={formData.author_name}
                       onChange={(e) => handleInputChange("author_name", e.target.value)}
+                      className="border-[#d1d5db] focus:border-[#6366f1] focus:ring-[#6366f1]"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="author_avatar">رابط صورة الكاتب</Label>
+                    <Label htmlFor="author_avatar" className="text-[#374151]">رابط صورة الكاتب</Label>
                     <Input
                       id="author_avatar"
                       value={formData.author_avatar}
                       onChange={(e) => handleInputChange("author_avatar", e.target.value)}
+                      className="border-[#d1d5db] focus:border-[#6366f1] focus:ring-[#6366f1]"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <Label htmlFor="tags">الكلمات المفتاحية (مفصولة بفواصل)</Label>
+                  <Label htmlFor="tags" className="text-[#374151]">الكلمات المفتاحية (مفصولة بفواصل)</Label>
                   <Input
                     id="tags"
                     value={formData.tags}
                     onChange={(e) => handleInputChange("tags", e.target.value)}
                     placeholder="تعليم, جامعات, دراسة"
+                    className="border-[#d1d5db] focus:border-[#6366f1] focus:ring-[#6366f1]"
                   />
                 </div>
 
@@ -474,27 +490,36 @@ const AdminArticles = () => {
                       id="is_published"
                       checked={formData.is_published}
                       onCheckedChange={(checked) => handleInputChange("is_published", checked)}
+                      className="data-[state=checked]:bg-[#6366f1]"
                     />
-                    <Label htmlFor="is_published">نشر المقال</Label>
+                    <Label htmlFor="is_published" className="text-[#374151]">نشر المقال</Label>
                   </div>
                   <div className="flex items-center space-x-2">
                     <Switch
                       id="is_featured"
                       checked={formData.is_featured}
                       onCheckedChange={(checked) => handleInputChange("is_featured", checked)}
+                      className="data-[state=checked]:bg-[#8b5cf6]"
                     />
-                    <Label htmlFor="is_featured">وضع مميز</Label>
+                    <Label htmlFor="is_featured" className="text-[#374151]">وضع مميز</Label>
                   </div>
                 </div>
 
                 <div className="flex justify-end gap-4">
-                  <Button type="button" variant="outline" onClick={() => {
-                    resetForm();
-                    setShowForm(false);
-                  }}>
+                  <Button 
+                    type="button" 
+                    className="bg-gradient-to-r from-[#64748b] to-[#94a3b8] hover:from-[#475569] hover:to-[#64748b] text-white"
+                    onClick={() => {
+                      resetForm();
+                      setShowForm(false);
+                    }}
+                  >
                     إلغاء
                   </Button>
-                  <Button type="submit">
+                  <Button 
+                    type="submit"
+                    className="bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] hover:from-[#4f46e5] hover:to-[#7c3aed] text-white"
+                  >
                     {editingArticle ? "حفظ التغييرات" : "إضافة المقال"}
                   </Button>
                 </div>
@@ -503,26 +528,26 @@ const AdminArticles = () => {
           </Dialog>
         </div>
 
-        <Card>
-          <CardHeader>
+        <Card className="border-[#e2e8f0]">
+          <CardHeader className="bg-gradient-to-r from-[#0ea5e9] to-[#0c4a6e] text-white rounded-t-lg">
             <CardTitle>قائمة المقالات ({articles.length})</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-6">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>العنوان</TableHead>
-                  <TableHead>الكاتب</TableHead>
-                  <TableHead>التصنيف</TableHead>
-                  <TableHead>المشاهدات</TableHead>
-                  <TableHead>الحالة</TableHead>
-                  <TableHead>تاريخ الإنشاء</TableHead>
-                  <TableHead>الإجراءات</TableHead>
+                <TableRow className="bg-[#f1f5f9]">
+                  <TableHead className="text-[#334155] font-bold">العنوان</TableHead>
+                  <TableHead className="text-[#334155] font-bold">الكاتب</TableHead>
+                  <TableHead className="text-[#334155] font-bold">التصنيف</TableHead>
+                  <TableHead className="text-[#334155] font-bold">المشاهدات</TableHead>
+                  <TableHead className="text-[#334155] font-bold">الحالة</TableHead>
+                  <TableHead className="text-[#334155] font-bold">تاريخ الإنشاء</TableHead>
+                  <TableHead className="text-[#334155] font-bold">الإجراءات</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {articles.map((article) => (
-                  <TableRow key={article.id}>
+                  <TableRow key={article.id} className="hover:bg-[#f8fafc]">
                     <TableCell>
                       <div className="flex items-center gap-3">
                         {article.featured_image && (
@@ -533,8 +558,8 @@ const AdminArticles = () => {
                           />
                         )}
                         <div>
-                          <div className="font-medium">{article.title_ar}</div>
-                          <div className="text-sm text-muted-foreground">{article.title_en}</div>
+                          <div className="font-medium text-[#1e293b]">{article.title_ar}</div>
+                          <div className="text-sm text-[#64748b]">{article.title_en}</div>
                         </div>
                       </div>
                     </TableCell>
@@ -547,14 +572,14 @@ const AdminArticles = () => {
                             className="w-6 h-6 rounded-full"
                           />
                         )}
-                        {article.author_name || "غير محدد"}
+                        <span className="text-[#475569]">{article.author_name || "غير محدد"}</span>
                       </div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="text-[#475569]">
                       {article.category || "غير محدد"}
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-1 text-[#475569]">
                         <Eye className="w-4 h-4" />
                         {article.views_count || 0}
                       </div>
@@ -562,20 +587,26 @@ const AdminArticles = () => {
                     <TableCell>
                       <div className="flex gap-1">
                         {article.is_published ? (
-                          <Badge>منشور</Badge>
+                          <Badge className="bg-gradient-to-r from-[#10b981] to-[#059669] text-white">
+                            منشور
+                          </Badge>
                         ) : (
-                          <Badge variant="secondary">مسودة</Badge>
+                          <Badge className="bg-gradient-to-r from-[#64748b] to-[#475569] text-white">
+                            مسودة
+                          </Badge>
                         )}
                         {article.is_featured && (
-                          <Badge variant="outline">مميز</Badge>
+                          <Badge className="bg-gradient-to-r from-[#f59e0b] to-[#d97706] text-white">
+                            مميز
+                          </Badge>
                         )}
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-1 text-[#475569]">
                         {formatDate(article.created_at)}
                         {article.reading_time && (
-                          <Badge variant="outline" className="flex items-center gap-1">
+                          <Badge className="bg-gradient-to-r from-[#8b5cf6] to-[#7c3aed] text-white flex items-center gap-1">
                             <Clock className="w-3 h-3" />
                             {article.reading_time} د
                           </Badge>
@@ -585,14 +616,14 @@ const AdminArticles = () => {
                     <TableCell>
                       <div className="flex gap-2">
                         <Button
-                          variant="outline"
+                          className="bg-gradient-to-r from-[#0ea5e9] to-[#0284c7] hover:from-[#0284c7] hover:to-[#0369a1] text-white"
                           size="sm"
                           onClick={() => handleEdit(article)}
                         >
                           <Edit className="w-4 h-4" />
                         </Button>
                         <Button
-                          variant="destructive"
+                          className="bg-gradient-to-r from-[#ef4444] to-[#dc2626] hover:from-[#dc2626] hover:to-[#b91c1c] text-white"
                           size="sm"
                           onClick={() => handleDelete(article.id)}
                         >
@@ -607,7 +638,7 @@ const AdminArticles = () => {
 
             {articles.length === 0 && (
               <div className="text-center py-8">
-                <p className="text-muted-foreground">لا توجد مقالات حتى الآن</p>
+                <p className="text-[#64748b]">لا توجد مقالات حتى الآن</p>
               </div>
             )}
           </CardContent>

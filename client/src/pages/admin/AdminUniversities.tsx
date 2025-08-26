@@ -692,7 +692,7 @@ const AdminUniversities = () => {
             <h1 className="text-3xl font-bold">إدارة الجامعات</h1>
             <p className="text-muted-foreground">إضافة وتعديل الجامعات</p>
           </div>
-          <Button onClick={() => setShowForm(true)}>
+          <Button className="btn-admin-success" onClick={() => setShowForm(true)}>
             <Plus className="w-4 h-4 ml-2" />
             إضافة جامعة جديدة
           </Button>
@@ -1318,12 +1318,12 @@ const AdminUniversities = () => {
                 </div>
 
                 <div className="flex gap-4">
-                  <Button type="submit">
+                  <Button type="submit" className="btn-admin-primary">
                     {editingUniversity ? "حفظ التعديلات" : "إضافة الجامعة"}
                   </Button>
                   <Button 
                     type="button" 
-                    variant="outline" 
+                    className="btn-admin-outline"
                     onClick={resetForm}
                   >
                     إلغاء
@@ -1391,15 +1391,15 @@ const AdminUniversities = () => {
                     <TableCell>
                       <div className="flex gap-2">
                         <Button 
-                          variant="outline" 
                           size="sm" 
+                          className="btn-admin-info"
                           onClick={() => handleEdit(university)}
                         >
                           <Edit className="w-4 h-4" />
                         </Button>
                         <Button 
-                          variant="destructive" 
                           size="sm" 
+                          className="btn-admin-danger"
                           onClick={() => handleDelete(university.id)}
                         >
                           <Trash2 className="w-4 h-4" />

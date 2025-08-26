@@ -417,7 +417,7 @@ const AdminPrograms = () => {
 
           <Dialog open={showForm} onOpenChange={setShowForm}>
             <DialogTrigger asChild>
-              <Button onClick={() => resetForm()}>
+              <Button className="btn-admin-success" onClick={() => resetForm()}>
                 <Plus className="w-4 h-4 ml-2" />
                 إضافة برنامج جديد
               </Button>
@@ -738,10 +738,10 @@ const AdminPrograms = () => {
                 </div>
 
                 <div className="flex justify-end gap-4">
-                  <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
+                  <Button type="button" className="btn-admin-outline" onClick={() => setShowForm(false)}>
                     إلغاء
                   </Button>
-                  <Button type="submit">
+                  <Button type="submit" className="btn-admin-primary">
                     {editingProgram ? "حفظ التغييرات" : "إضافة البرنامج"}
                   </Button>
                 </div>
@@ -819,15 +819,15 @@ const AdminPrograms = () => {
                     <TableCell>
                       <div className="flex gap-2">
                         <Button
-                          variant="outline"
                           size="sm"
+                          className="btn-admin-info"
                           onClick={() => handleEdit(program)}
                         >
                           <Edit className="w-4 h-4" />
                         </Button>
                         <Button
-                          variant="destructive"
                           size="sm"
+                          className="btn-admin-danger"
                           onClick={() => handleDelete(program.id)}
                         >
                           <Trash2 className="w-4 h-4" />
