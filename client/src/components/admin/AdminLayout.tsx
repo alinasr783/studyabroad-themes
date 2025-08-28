@@ -69,26 +69,26 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <p>جار التحميل...</p>
+      <div className="flex items-center justify-center h-screen bg-gray-900">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-900 dark:to-gray-800">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
       {/* Header */}
-      <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-lg">
+      <header className="bg-gray-800 border-b border-gray-700 shadow-xl">
         <div className="flex items-center justify-between px-6 py-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-800 dark:text-white">لوحة التحكم</h1>
-            <p className="text-sm text-gray-600 dark:text-gray-300">
+            <h1 className="text-2xl font-bold text-white">لوحة التحكم</h1>
+            <p className="text-sm text-gray-400">
               {session?.client?.name || "مدير النظام"}
             </p>
           </div>
           <div className="flex items-center gap-4">
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{session?.full_name || session?.email || "زائر"}</span>
-            <Button onClick={handleLogout} variant="outline" size="sm" className="border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:border-red-300 dark:hover:border-red-700">
+            <span className="text-sm font-medium text-gray-300">{session?.full_name || session?.email || "زائر"}</span>
+            <Button onClick={handleLogout} variant="outline" size="sm" className="border-red-700 text-red-400 hover:bg-red-900/40 hover:border-red-600 transition-colors duration-200">
               <LogOut className="w-4 h-4 ml-2" />
               تسجيل الخروج
             </Button>
@@ -98,9 +98,9 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
 
       <div className="flex">
         {/* Sidebar */}
-        <aside className="w-64 bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 min-h-[calc(100vh-80px)] shadow-lg">
+        <aside className="w-64 bg-gray-800 border-l border-gray-700 min-h-[calc(100vh-80px)] shadow-xl">
           <nav className="p-4">
-            <div className="space-y-1">
+            <div className="space-y-2">
               {menuItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = location.pathname === item.path;
@@ -110,8 +110,8 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
                     variant="ghost"
                     className={`w-full justify-start h-11 rounded-lg font-medium transition-all duration-200 ${
                       isActive 
-                        ? "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 shadow-sm" 
-                        : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 hover:text-gray-900 dark:hover:text-white"
+                        ? "bg-indigo-900/50 text-indigo-300 border border-indigo-700 shadow-md" 
+                        : "text-gray-400 hover:bg-gray-700/60 hover:text-white"
                     }`}
                     onClick={() => navigate(item.path)}
                   >
@@ -125,7 +125,11 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 p-6 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm">{children}</main>
+        <main className="flex-1 p-6 bg-gray-900/50 backdrop-blur-sm">
+          <div className="bg-gray-800/70 rounded-xl border border-gray-700 p-6 shadow-lg">
+            {children}
+          </div>
+        </main>
       </div>
     </div>
   );
